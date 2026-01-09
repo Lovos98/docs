@@ -43,15 +43,17 @@ The main toolbar provides global controls for the visualization.
   <img src="/images/tutorials/main-toolbar.png" alt="Main Toolbar" />
 </Frame>
 
-| Control | Description |
-|---------|-------------|
-| **Restart Layout** | Recalculate node positions from scratch |
-| **Undo/Redo** | Step through selection history |
-| **Zoom In/Out** | Adjust view zoom level |
-| **Labels** | Toggle class/member labels, adjust size |
-| **Brightness** | Adjust overall graph brightness |
-| **GPU Tweaks** | Fine-tune layout algorithm parameters |
-| **Sidebar Toggles** | Show/hide left and right panels |
+From left to right:
+
+| Icon | Control | Description |
+|------|---------|-------------|
+| ↻ | **Restart Layout** | Recalculate node positions from scratch |
+| ↩ ↪ | **Undo/Redo** | Step through view history |
+| 🔍- 🔍+ | **Zoom Out/In** | Adjust view zoom level |
+| ◇ | **Labels** | Toggle node labels visibility |
+| ━━○━━ | **Brightness** | Adjust overall graph brightness |
+| ⚙ Tweaks | **GPU Tweaks** | Fine-tune layout algorithm parameters |
+| ▫▫ | **Sidebar Toggles** | Show/hide left and right panels |
 
 ## Selection Toolbar
 
@@ -61,20 +63,26 @@ When you select nodes, the selection toolbar appears with mode controls.
   <img src="/images/tutorials/selection-toolbar.png" alt="Selection Toolbar" />
 </Frame>
 
-### Selection Modes (Q W E R)
+From left to right:
 
-Use the **Q, W, E, R** keys for quick access to selection modes—they're right next to each other for easy finger access:
+| Icon | Control | Description |
+|------|---------|-------------|
+| 1 | **Selection Count** | Number of selected nodes |
+| ▶ | **Selection Mode** | Current mode (pointer = new selection) |
+| + | **Add** | Add clicked nodes to selection |
+| − | **Subtract** | Remove clicked nodes from selection |
+| ⋔ | **Isolate** | Show only selected nodes and connections |
+| − 1 + | **Depth** | How many hops from selection to include |
+| ↩ ↪ | **Undo/Redo** | Step through selection history |
+| × | **Clear** | Deselect all nodes |
 
-| Key | Mode | Icon | Description |
-|-----|------|------|-------------|
-| **Q** | New | Pointer | Click replaces current selection |
-| **W** | Add | Plus | Click adds to current selection |
-| **E** | Subtract | Minus | Click removes from selection |
-| **R** | Intersect | Merge | Keep only nodes in both selections |
+### Selection Modes
 
-<Tip>
-The Q-W-E-R layout means you can switch modes without moving your hand—they're all under your left fingers on a QWERTY keyboard.
-</Tip>
+| Mode | Description |
+|------|-------------|
+| **New** | Click replaces current selection |
+| **Add** (+) | Click adds to current selection |
+| **Subtract** (−) | Click removes from selection |
 
 ### Selection Depth
 
@@ -82,17 +90,15 @@ Control how many hops from your selection to include:
 
 - **Depth 1**: Only directly connected nodes
 - **Depth 2**: Nodes within 2 hops
-- **Depth 3-5**: Wider neighborhood
+- **Depth 3+**: Wider neighborhood
 
-Use the **+** and **-** buttons to adjust depth.
+### Keyboard Shortcuts
 
-### Other Selection Controls
-
-| Control | Shortcut | Description |
-|---------|----------|-------------|
-| **Undo** | `Ctrl+Z` | Undo last selection change |
-| **Redo** | `Ctrl+Shift+Z` | Redo selection change |
-| **Clear** | `Esc` | Deselect all nodes |
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Z` | Undo selection |
+| `Ctrl+Shift+Z` | Redo selection |
+| `Esc` | Clear selection |
 
 ## Left Sidebar
 
@@ -191,13 +197,9 @@ complexity:cyclomatic = 8
 
 | Key | Action |
 |-----|--------|
-| `Q` | New selection mode |
-| `W` | Add to selection mode |
-| `E` | Subtract from selection mode |
-| `R` | Intersect selection mode |
 | `Escape` | Clear selection |
-| `Ctrl+Z` | Undo selection |
-| `Ctrl+Shift+Z` | Redo selection |
+| `Ctrl+Z` | Undo |
+| `Ctrl+Shift+Z` | Redo |
 
 ### Touch Controls (Mobile/Tablet)
 
