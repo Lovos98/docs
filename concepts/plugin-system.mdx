@@ -1,0 +1,502 @@
+---
+title: Plugin System
+description: "Extending CodeGraph with custom plugins"
+---
+
+# Plugin System
+
+CodeGraph's plugin system lets you add any data to your graph and visualize it. Inspired by Houdini's attribute system, plugins write attributes to nodes and edges—then the renderer uses those attributes to change colors, sizes, and more.
+
+## The Houdini Way
+
+In Houdini, you don't hardcode "this point is red." Instead, you set an attribute `Cd = (1, 0, 0)` and the renderer reads it. CodeGraph works the same way:
+
+```
+Plugin writes attribute → Renderer reads attribute → Visual changes
+```
+
+This separation means:
+- **Any plugin** can add any attribute
+- **The renderer** doesn't need to know about specific plugins
+- **Users** can map any attribute to any visual property
+
+## How It Works: Test Coverage Example
+
+<Steps>
+  <Step title="Plugin writes attributes">
+    The coverage plugin reads your test coverage report and writes `coverage:percent` to each node:
+    ```csharp
+    await storage.UpdateNodeAttributesAsync(nodeId, new Dictionary<string, object>
+    {
+        ["coverage:percent"] = 73.5
+    });
+    ```
+  </Step>
+  <Step title="Plugin declares visualization">
+    The plugin tells the frontend how to visualize this attribute:
+    ```csharp
+    new OverlayDefinition
+    {
+        Attribute = "coverage:percent",
+        Type = OverlayType.Color,
+        Legend = new GradientLegend
+        {
+            Stops = new[]
+            {
+                new LegendStop(0, "#ef4444"),    // 0% = red
+                new LegendStop(50, "#f59e0b"),   // 50% = orange
+                new LegendStop(100, "#22c55e")   // 100% = green
+            }
+        }
+    }
+    ```
+  </Step>
+  <Step title="Renderer applies colors">
+    The Three.js renderer reads each node's `coverage:percent` and interpolates the color:
+    ```typescript
+    function getNodeColor(node: Node, overlay: OverlayDefinition): Color {
+        const value = node.attributes[overlay.attribute];
+        return interpolateGradient(value, overlay.legend.stops);
+    }
+    ```
+  </Step>
+</Steps>
+
+The result: nodes glow **red** (untested), **orange** (partially tested), or **green** (well tested)—and the plugin didn't need to know anything about Three.js.
+
+## Node Attributes vs Edge Attributes
+
+Plugins can write to both nodes and edges:
+
+### Node Attributes
+
+Properties of code entities (classes, methods, files):
+
+| Attribute | Type | Example |
+|-----------|------|---------|
+| `coverage:percent` | number | `85.5` |
+| `git:churn` | number | `47` |
+| `complexity:cyclomatic` | number | `12` |
+| `ownership:team` | string | `"Platform"` |
+| `quarterly:commits` | number | `23` |
+| `quarterly:active` | boolean | `true` |
+
+### Edge Attributes
+
+Properties of relationships (dependencies, calls, inheritance):
+
+| Attribute | Type | Example |
+|-----------|------|---------|
+| `calls:count` | number | `156` |
+| `calls:lastWeek` | number | `12` |
+| `coupling:score` | number | `0.85` |
+| `dataflow:tainted` | boolean | `true` |
+
+```csharp
+// Writing edge attributes
+await storage.UpdateEdgeAttributesAsync(edgeId, new Dictionary<string, object>
+{
+    ["calls:count"] = 156,
+    ["calls:lastWeek"] = 12
+});
+```
+
+The renderer can use edge attributes too—for example, thicker lines for frequently-used dependencies.
+
+## Plugin Examples
+
+### Test Coverage Plugin
+
+Color nodes by how well they're tested:
+
+```csharp
+public class TestCoveragePlugin : IOverlayPlugin
+{
+    public string Id => "test-coverage";
+    public string Name => "Test Coverage";
+
+    public OverlayDefinition[] Overlays => new[]
+    {
+        new OverlayDefinition
+        {
+            Id = "line-coverage",
+            Name = "Line Coverage",
+            Type = OverlayType.Color,
+            Attribute = "coverage:percent",
+            Legend = new GradientLegend
+            {
+                Stops = new[]
+                {
+                    new LegendStop(0, "#ef4444", "0% - No coverage"),
+                    new LegendStop(50, "#f59e0b", "50% - Partial"),
+                    new LegendStop(80, "#84cc16", "80% - Good"),
+                    new LegendStop(100, "#22c55e", "100% - Full coverage")
+                }
+            }
+        }
+    };
+
+    public async Task ApplyAsync(IGraphStorage storage, CancellationToken ct)
+    {
+        var coverage = await ParseCoverageReport(_reportPath);
+        var nodes = await storage.GetNodesAsync(ct);
+
+        foreach (var node in nodes)
+        {
+            if (coverage.TryGetValue(node.FilePath, out var data))
+            {
+                await storage.UpdateNodeAttributesAsync(node.Id, new Dictionary<string, object>
+                {
+                    ["coverage:percent"] = data.LinePercent,
+                    ["coverage:lines"] = data.CoveredLines,
+                    ["coverage:branches"] = data.BranchPercent
+                }, ct);
+            }
+        }
+    }
+
+    public async Task RemoveAsync(IGraphStorage storage, CancellationToken ct)
+    {
+        await storage.RemoveAttributesByPrefixAsync("coverage:", ct);
+    }
+}
+```
+
+### Git Activity Plugin
+
+Show where work is happening and identify hotspots:
+
+```csharp
+public class GitActivityPlugin : IOverlayPlugin
+{
+    public string Id => "git-activity";
+    public string Name => "Git Activity";
+
+    public OverlayDefinition[] Overlays => new[]
+    {
+        // Churn: how often files change (maintenance burden)
+        new OverlayDefinition
+        {
+            Id = "churn",
+            Name = "Code Churn",
+            Type = OverlayType.Color,
+            Attribute = "git:churn",
+            Legend = new GradientLegend("#22c55e", "#ef4444") // green=stable, red=volatile
+        },
+        // Size by number of authors (coordination overhead)
+        new OverlayDefinition
+        {
+            Id = "authors",
+            Name = "Author Count",
+            Type = OverlayType.Size,
+            Attribute = "git:authors",
+            Legend = new SizeLegend(minSize: 5, maxSize: 40)
+        }
+    };
+
+    public async Task ApplyAsync(IGraphStorage storage, CancellationToken ct)
+    {
+        var repo = new Repository(_repoPath);
+        var nodes = await storage.GetNodesAsync(ct);
+
+        foreach (var node in nodes)
+        {
+            var commits = repo.Commits.QueryBy(node.FilePath);
+            var authors = commits.Select(c => c.Author.Email).Distinct().Count();
+            var lastModified = commits.FirstOrDefault()?.Author.When;
+
+            await storage.UpdateNodeAttributesAsync(node.Id, new Dictionary<string, object>
+            {
+                ["git:churn"] = commits.Count(),
+                ["git:authors"] = authors,
+                ["git:lastModified"] = lastModified?.ToString("o")
+            }, ct);
+        }
+    }
+
+    public async Task RemoveAsync(IGraphStorage storage, CancellationToken ct)
+    {
+        await storage.RemoveAttributesByPrefixAsync("git:", ct);
+    }
+}
+```
+
+### Quarterly Activity Plugin
+
+Answer "what was worked on this quarter?" for sprint planning and reporting:
+
+```csharp
+public class QuarterlyActivityPlugin : IOverlayPlugin
+{
+    public string Id => "quarterly-activity";
+    public string Name => "Quarterly Activity";
+
+    public OverlayDefinition[] Overlays => new[]
+    {
+        // Color: commits this quarter (0 = gray, many = bright blue)
+        new OverlayDefinition
+        {
+            Id = "quarterly-commits",
+            Name = "Q4 2024 Commits",
+            Type = OverlayType.Color,
+            Attribute = "quarterly:commits",
+            Legend = new GradientLegend
+            {
+                Stops = new[]
+                {
+                    new LegendStop(0, "#6b7280", "No activity"),
+                    new LegendStop(1, "#93c5fd", "Some activity"),
+                    new LegendStop(10, "#3b82f6", "Moderate"),
+                    new LegendStop(50, "#1d4ed8", "Hot")
+                }
+            }
+        },
+        // Badge: which team worked on it
+        new OverlayDefinition
+        {
+            Id = "quarterly-team",
+            Name = "Active Team",
+            Type = OverlayType.Badge,
+            Attribute = "quarterly:team"
+        }
+    };
+
+    private readonly DateTime _quarterStart;
+    private readonly DateTime _quarterEnd;
+
+    public QuarterlyActivityPlugin(int year, int quarter)
+    {
+        _quarterStart = new DateTime(year, (quarter - 1) * 3 + 1, 1);
+        _quarterEnd = _quarterStart.AddMonths(3);
+    }
+
+    public async Task ApplyAsync(IGraphStorage storage, CancellationToken ct)
+    {
+        var repo = new Repository(_repoPath);
+        var nodes = await storage.GetNodesAsync(ct);
+
+        foreach (var node in nodes)
+        {
+            var quarterlyCommits = repo.Commits
+                .QueryBy(node.FilePath)
+                .Where(c => c.Author.When >= _quarterStart && c.Author.When < _quarterEnd)
+                .ToList();
+
+            var authors = quarterlyCommits
+                .Select(c => c.Author.Email)
+                .Distinct()
+                .ToList();
+
+            // Determine primary team from email domain or CODEOWNERS
+            var primaryTeam = DetermineTeam(authors);
+
+            await storage.UpdateNodeAttributesAsync(node.Id, new Dictionary<string, object>
+            {
+                ["quarterly:commits"] = quarterlyCommits.Count,
+                ["quarterly:authors"] = authors.Count,
+                ["quarterly:active"] = quarterlyCommits.Count > 0,
+                ["quarterly:team"] = primaryTeam,
+                ["quarterly:period"] = $"Q{_quarter} {_year}"
+            }, ct);
+        }
+    }
+
+    public async Task RemoveAsync(IGraphStorage storage, CancellationToken ct)
+    {
+        await storage.RemoveAttributesByPrefixAsync("quarterly:", ct);
+    }
+}
+```
+
+### Dataflow Taint Plugin
+
+Highlight security-sensitive paths through your code:
+
+```csharp
+public class DataflowTaintPlugin : IOverlayPlugin
+{
+    public string Id => "dataflow-taint";
+    public string Name => "Dataflow Taint Analysis";
+
+    public OverlayDefinition[] Overlays => new[]
+    {
+        // Nodes that handle user input
+        new OverlayDefinition
+        {
+            Id = "taint-source",
+            Name = "Taint Sources",
+            Type = OverlayType.Badge,
+            Attribute = "taint:source"
+        },
+        // Edges that carry tainted data
+        new OverlayDefinition
+        {
+            Id = "taint-flow",
+            Name = "Tainted Data Flow",
+            Type = OverlayType.EdgeColor,
+            Attribute = "taint:flow",
+            Legend = new GradientLegend("#22c55e", "#ef4444") // green=safe, red=tainted
+        }
+    };
+
+    public async Task ApplyAsync(IGraphStorage storage, CancellationToken ct)
+    {
+        var nodes = await storage.GetNodesAsync(ct);
+        var edges = await storage.GetEdgesAsync(ct);
+
+        // Mark taint sources (user input entry points)
+        var sources = nodes.Where(n => IsTaintSource(n));
+        foreach (var source in sources)
+        {
+            await storage.UpdateNodeAttributesAsync(source.Id, new Dictionary<string, object>
+            {
+                ["taint:source"] = true,
+                ["taint:type"] = GetTaintType(source) // "HttpRequest", "FileUpload", etc.
+            }, ct);
+        }
+
+        // Trace tainted paths to sinks
+        var taintedPaths = await TraceTaintedPaths(storage, sources, ct);
+        foreach (var edge in taintedPaths)
+        {
+            await storage.UpdateEdgeAttributesAsync(edge.Id, new Dictionary<string, object>
+            {
+                ["taint:flow"] = true,
+                ["taint:severity"] = CalculateSeverity(edge)
+            }, ct);
+        }
+    }
+
+    public async Task RemoveAsync(IGraphStorage storage, CancellationToken ct)
+    {
+        await storage.RemoveAttributesByPrefixAsync("taint:", ct);
+    }
+}
+```
+
+## Overlay Types
+
+| Type | Effect | Best For |
+|------|--------|----------|
+| `Color` | Node fill color gradient | Continuous metrics (coverage %, complexity) |
+| `Size` | Node radius | Magnitude (lines of code, commit count) |
+| `Badge` | Icon or label on node | Categories (team, status, language) |
+| `EdgeColor` | Edge/line color | Relationship metrics (call frequency, coupling) |
+| `EdgeWidth` | Edge thickness | Relationship strength (how often called) |
+
+## Renderer Integration
+
+The frontend renderer is generic—it doesn't know about specific plugins. It just reads attributes and applies visuals:
+
+```typescript
+// The renderer loops through active overlays
+function renderGraph(nodes: Node[], edges: Edge[], overlays: OverlayDefinition[]) {
+    for (const node of nodes) {
+        let color = DEFAULT_NODE_COLOR;
+        let size = DEFAULT_NODE_SIZE;
+
+        for (const overlay of overlays) {
+            if (overlay.type === 'Color') {
+                const value = node.attributes[overlay.attribute];
+                if (value !== undefined) {
+                    color = interpolateGradient(value, overlay.legend);
+                }
+            }
+            if (overlay.type === 'Size') {
+                const value = node.attributes[overlay.attribute];
+                if (value !== undefined) {
+                    size = mapToRange(value, overlay.legend.min, overlay.legend.max);
+                }
+            }
+        }
+
+        drawNode(node, { color, size });
+    }
+
+    for (const edge of edges) {
+        let color = DEFAULT_EDGE_COLOR;
+        let width = DEFAULT_EDGE_WIDTH;
+
+        for (const overlay of overlays) {
+            if (overlay.type === 'EdgeColor') {
+                const value = edge.attributes[overlay.attribute];
+                if (value !== undefined) {
+                    color = interpolateGradient(value, overlay.legend);
+                }
+            }
+        }
+
+        drawEdge(edge, { color, width });
+    }
+}
+```
+
+This architecture means **any plugin can affect visuals** without changing renderer code.
+
+## Plugin Interface
+
+```csharp
+public interface IOverlayPlugin
+{
+    // Identification
+    string Id { get; }
+    string Name { get; }
+    string Description { get; }
+
+    // What visualizations this plugin provides
+    OverlayDefinition[] Overlays { get; }
+
+    // Lifecycle
+    Task ApplyAsync(IGraphStorage storage, CancellationToken ct);
+    Task RemoveAsync(IGraphStorage storage, CancellationToken ct);
+}
+```
+
+## Registering Plugins
+
+### Via Dependency Injection
+
+```csharp
+services.AddSingleton<IOverlayPlugin, TestCoveragePlugin>();
+services.AddSingleton<IOverlayPlugin, GitActivityPlugin>();
+services.AddSingleton<IOverlayPlugin, QuarterlyActivityPlugin>();
+```
+
+### Via Plugin Discovery
+
+Place DLLs in the `plugins/` directory:
+
+```
+plugins/
+├── CodeGraph.Plugin.Coverage.dll
+├── CodeGraph.Plugin.GitActivity.dll
+└── CodeGraph.Plugin.Quarterly.dll
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use Prefixed Attributes" icon="tag">
+    Always prefix: `myplugin:metric` not `metric`. Prevents conflicts between plugins.
+  </Card>
+  <Card title="Clean Removal" icon="trash">
+    Implement `RemoveAsync` to delete all your attributes: `RemoveAttributesByPrefixAsync("myplugin:")`
+  </Card>
+  <Card title="Handle Missing Data" icon="circle-question">
+    Not all nodes will have data. Skip gracefully, don't throw exceptions.
+  </Card>
+  <Card title="Report Progress" icon="bars-progress">
+    For long operations, report progress so users see activity.
+  </Card>
+</CardGroup>
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Custom Overlays" icon="palette" href="/how-to/custom-overlays">
+    Step-by-step guide to creating your first plugin
+  </Card>
+  <Card title="Philosophy" icon="lightbulb" href="/philosophy">
+    Understand the attribute-first design
+  </Card>
+</CardGroup>

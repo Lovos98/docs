@@ -1,0 +1,233 @@
+---
+title: GPU Layout Engine
+description: "Deep dive into GraphPU, the GPU-accelerated layout engine"
+---
+
+# GPU Layout Engine
+
+GraphPU is CodeGraph's native GPU-accelerated layout engine. It computes ForceAtlas2 graph layouts using Metal (macOS) or Vulkan (Linux/Windows) compute shaders.
+
+## Why GPU Layout?
+
+Force-directed layout algorithms like ForceAtlas2 are computationally expensive:
+- Each iteration computes forces between all node pairs: O(n²)
+- Large graphs need thousands of iterations
+- CPU computation becomes impractical for 1000+ nodes
+
+GPUs excel at parallel computation, making them ideal for force calculations.
+
+## Performance
+
+| Nodes | CPU Time | GPU Time | Speedup |
+|-------|----------|----------|---------|
+| 100 | 0.5s | 0.3s | 1.7x |
+| 1,000 | 8s | 1.2s | 6.7x |
+| 5,000 | 120s | 4s | 30x |
+| 10,000 | 600s+ | 12s | 50x+ |
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  .NET API Server                                            │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  RustGpuLayoutAdapter : ILayoutCompute               │   │
+│  │  - Implements port interface                         │   │
+│  │  - Manages WebSocket connection                      │   │
+│  │  - Handles progress callbacks                        │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                    ↕ WebSocket (ws://localhost:9002)
+┌─────────────────────────────────────────────────────────────┐
+│  GraphPU Server (Rust)                                      │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  WebSocket Handler                                   │   │
+│  │  - Receives graph data                               │   │
+│  │  - Sends progress updates                            │   │
+│  │  - Returns final positions                           │   │
+│  └─────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  Layout Engine                                       │   │
+│  │  - wgpu for GPU abstraction                          │   │
+│  │  - ForceAtlas2 in compute shaders                    │   │
+│  │  - Barnes-Hut optimization                           │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                    ↕ GPU Compute
+┌─────────────────────────────────────────────────────────────┐
+│  GPU (Metal / Vulkan)                                       │
+│  - Parallel force calculations                              │
+│  - Thousands of threads                                     │
+│  - Hardware acceleration                                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## ForceAtlas2 Algorithm
+
+ForceAtlas2 is a force-directed algorithm designed for network visualization:
+
+### Forces
+
+1. **Repulsion**: All nodes repel each other (prevents overlap)
+2. **Attraction**: Connected nodes attract each other (clusters related nodes)
+3. **Gravity**: Pulls nodes toward center (prevents drift)
+
+### Parameters
+
+| Parameter | Effect |
+|-----------|--------|
+| `gravity` | Center pull strength. Higher = tighter clusters |
+| `scalingRatio` | Overall layout scale |
+| `edgeWeightInfluence` | How much edge weights affect attraction |
+| `strongGravityMode` | Prevents nodes from drifting to infinity |
+| `barnesHutTheta` | Approximation accuracy (performance vs quality) |
+
+### Barnes-Hut Optimization
+
+Instead of computing n² force interactions, Barnes-Hut groups distant nodes:
+
+```
+O(n²) → O(n log n)
+```
+
+This makes large graphs tractable even on modest GPUs.
+
+## Compute Shaders
+
+The core algorithm runs in WGSL compute shaders:
+
+```wgsl
+@compute @workgroup_size(256)
+fn compute_forces(
+    @builtin(global_invocation_id) id: vec3<u32>
+) {
+    let node_idx = id.x;
+    if (node_idx >= uniforms.node_count) { return; }
+
+    var force = vec3<f32>(0.0);
+
+    // Repulsion from all nodes
+    for (var i = 0u; i < uniforms.node_count; i++) {
+        if (i == node_idx) { continue; }
+        let delta = positions[node_idx] - positions[i];
+        let dist = max(length(delta), 0.001);
+        force += normalize(delta) * (uniforms.repulsion / (dist * dist));
+    }
+
+    // Attraction to connected nodes
+    // ... edge traversal ...
+
+    // Gravity toward center
+    force -= positions[node_idx] * uniforms.gravity;
+
+    // Apply force with adaptive speed
+    forces[node_idx] = force;
+}
+```
+
+## Protocol
+
+GraphPU uses a simple WebSocket JSON protocol:
+
+### Start Layout
+
+```json
+{
+  "type": "start",
+  "nodes": ["id1", "id2", "id3"],
+  "edges": [
+    {"source": "id1", "target": "id2"},
+    {"source": "id2", "target": "id3"}
+  ],
+  "options": {
+    "iterations": 1000,
+    "gravity": 1.0
+  }
+}
+```
+
+### Progress Update
+
+```json
+{
+  "type": "progress",
+  "iteration": 450,
+  "total": 1000,
+  "converged": false
+}
+```
+
+### Result
+
+```json
+{
+  "type": "result",
+  "positions": {
+    "id1": [1.23, 4.56, 0.0],
+    "id2": [2.34, 5.67, 0.0],
+    "id3": [3.45, 6.78, 0.0]
+  },
+  "duration_ms": 2341
+}
+```
+
+## Building GraphPU
+
+```bash
+cd lib/graphpu
+
+# Build release binary
+cargo build --features server --bin graphpu-server --release
+
+# Check GPU support
+./target/release/graphpu-server --check
+```
+
+### Features
+
+| Feature | Description |
+|---------|-------------|
+| `server` | WebSocket server (default) |
+| `metal` | Force Metal backend (macOS) |
+| `vulkan` | Force Vulkan backend |
+
+## Configuration
+
+Environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `GRAPHPU_HOST` | `0.0.0.0` | Bind address |
+| `GRAPHPU_PORT` | `9002` | WebSocket port |
+| `GRAPHPU_LOG` | `info` | Log level |
+
+## Fallback
+
+When GPU is unavailable, CodeGraph falls back to CPU layout:
+
+```csharp
+public class LayoutService
+{
+    public async Task<LayoutResult> ComputeLayoutAsync(...)
+    {
+        if (await _gpuAdapter.IsAvailableAsync(ct))
+        {
+            return await _gpuAdapter.ComputeLayoutAsync(...);
+        }
+
+        // CPU fallback
+        return await _cpuLayout.ComputeLayoutAsync(...);
+    }
+}
+```
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="GPU Layout Tutorial" icon="microchip" href="/tutorials/gpu-layout">
+    Using GPU layout in practice
+  </Card>
+  <Card title="Large Codebases" icon="building" href="/how-to/large-codebases">
+    Tips for very large graphs
+  </Card>
+</CardGroup>

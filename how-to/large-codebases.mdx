@@ -1,0 +1,244 @@
+---
+title: Large Codebases
+description: "Tips for analyzing and visualizing very large graphs"
+---
+
+# Large Codebases
+
+CodeGraph can handle large codebases, but very large graphs (10,000+ nodes) require some optimization. This guide covers best practices.
+
+## Analysis Optimization
+
+### Exclude Unnecessary Projects
+
+```bash
+# Exclude test projects
+codegraph analyze ./Solution.sln --exclude "*Tests*" --exclude "*Test*"
+
+# Only include core projects
+codegraph analyze ./Solution.sln --include "*.Core" --include "*.Domain"
+```
+
+### Use Class-Level Analysis
+
+Method-level analysis dramatically increases graph size:
+
+| Level | Typical Node Count |
+|-------|-------------------|
+| Namespace | 10-50 |
+| Class | 100-1,000 |
+| Method | 1,000-50,000 |
+
+```bash
+# Class-level (default, recommended for large codebases)
+codegraph analyze ./Solution.sln --depth class
+
+# Method-level (use only when needed)
+codegraph analyze ./Solution.sln --depth method
+```
+
+### Incremental Analysis
+
+After initial analysis, use incremental mode for updates:
+
+```bash
+# First time: full analysis
+codegraph analyze ./Solution.sln
+
+# Later: only changed files
+codegraph analyze ./Solution.sln --incremental
+```
+
+## Layout Optimization
+
+### Use GPU Layout
+
+GPU layout is essential for large graphs:
+
+| Nodes | CPU Time | GPU Time |
+|-------|----------|----------|
+| 1,000 | 8s | 1.2s |
+| 5,000 | 120s | 4s |
+| 10,000 | 600s+ | 12s |
+
+```bash
+# Ensure GPU server is running
+codegraph gpu start
+
+# Trigger GPU layout
+codegraph layout compute --gpu --iterations 2000
+```
+
+### Optimize Layout Parameters
+
+For very large graphs:
+
+```json
+{
+  "iterations": 2000,
+  "barnesHutTheta": 1.5,
+  "gravity": 2.0,
+  "scalingRatio": 5.0
+}
+```
+
+| Parameter | Large Graph Setting | Effect |
+|-----------|---------------------|--------|
+| `barnesHutTheta` | 1.5-2.0 | Faster but less accurate |
+| `gravity` | 2.0-5.0 | Keeps graph compact |
+| `scalingRatio` | 5.0-10.0 | Spreads out dense areas |
+
+## Visualization Optimization
+
+### Filter in the UI
+
+Use filters to reduce visible nodes:
+
+1. **Hide namespaces**: Focus on classes only
+2. **Hide methods**: If using method-level analysis
+3. **Filter by namespace**: Show one module at a time
+4. **Isolation mode**: Focus on a specific node and its connections
+
+### Use Isolation Mode
+
+1. Select a node of interest
+2. Press `I` to isolate
+3. Only connected nodes remain visible
+4. Press `I` again to exit
+
+### Adjust Render Settings
+
+```javascript
+// In frontend config
+{
+  "rendering": {
+    "maxVisibleNodes": 5000,
+    "lodEnabled": true,
+    "lodDistance": 100,
+    "labelMinZoom": 2.0
+  }
+}
+```
+
+## Neo4j Optimization
+
+### Memory Settings
+
+For large graphs, increase Neo4j memory:
+
+```properties
+# neo4j.conf
+dbms.memory.heap.initial_size=1G
+dbms.memory.heap.max_size=4G
+dbms.memory.pagecache.size=2G
+```
+
+### Add Indexes
+
+Ensure indexes exist (CodeGraph creates these automatically):
+
+```cypher
+CREATE INDEX node_id FOR (n:CodeNode) ON (n.id);
+CREATE INDEX node_name FOR (n:CodeNode) ON (n.name);
+CREATE INDEX node_type FOR (n:CodeNode) ON (n.type);
+CREATE INDEX node_namespace FOR (n:CodeNode) ON (n.namespace);
+```
+
+### Use Database Projections
+
+For very large graphs, consider analyzing subsets:
+
+```bash
+# Analyze into separate databases
+Neo4j__Database=core codegraph analyze ./src/Core --clear
+Neo4j__Database=web codegraph analyze ./src/Web --clear
+Neo4j__Database=full codegraph analyze ./Solution.sln --clear
+```
+
+## Splitting Large Solutions
+
+### By Module
+
+```bash
+# Analyze each module separately
+for module in Core Domain Infrastructure Web; do
+  codegraph analyze ./src/$module/*.csproj \
+    --database "module_$module"
+done
+```
+
+### By Team
+
+If you have team ownership:
+
+```bash
+# Team A's code
+codegraph analyze ./Solution.sln \
+  --include "TeamA.*" \
+  --database team_a
+
+# Team B's code
+codegraph analyze ./Solution.sln \
+  --include "TeamB.*" \
+  --database team_b
+```
+
+## Performance Benchmarks
+
+Real-world performance on Apple M1 Pro:
+
+| Codebase | Nodes | Edges | Analysis | GPU Layout |
+|----------|-------|-------|----------|------------|
+| Small app | 200 | 400 | 2s | 0.5s |
+| Medium app | 2,000 | 5,000 | 15s | 2s |
+| Large app | 10,000 | 30,000 | 60s | 12s |
+| Roslyn | 50,000 | 150,000 | 300s | 45s |
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Analysis runs out of memory">
+    - Reduce analysis depth to `class`
+    - Exclude test projects
+    - Analyze in smaller batches
+
+    ```bash
+    # Increase .NET memory limit
+    DOTNET_GCHeapHardLimit=8000000000 codegraph analyze ./Solution.sln
+    ```
+  </Accordion>
+
+  <Accordion title="Visualization is laggy">
+    - Enable filters to reduce visible nodes
+    - Use isolation mode
+    - Reduce render quality in settings
+    - Use a machine with dedicated GPU
+  </Accordion>
+
+  <Accordion title="Layout takes too long">
+    - Ensure GPU server is running
+    - Reduce iterations for initial layout
+    - Increase `barnesHutTheta` for approximation
+  </Accordion>
+
+  <Accordion title="Neo4j queries are slow">
+    - Check indexes are created
+    - Increase Neo4j memory
+    - Use parameterized queries
+    - Add specific indexes for your query patterns
+  </Accordion>
+</AccordionGroup>
+
+## Progressive Loading (Future)
+
+CodeGraph will support progressive loading for very large graphs:
+
+```javascript
+// Future API
+const graph = await loadGraph({
+  level: 'namespace',  // Start with high-level view
+  expandOnClick: true  // Load details on demand
+});
+```
+
+This will enable exploring million-node graphs by loading detail levels on demand.

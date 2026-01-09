@@ -1,0 +1,176 @@
+---
+title: Philosophy
+description: "The attribute-only design philosophy inspired by Houdini"
+---
+
+# Philosophy
+
+CodeGraph's design is heavily inspired by **SideFX Houdini**, the 3D software known for its procedural, node-based workflow. The key insight we borrowed: **everything is an attribute**.
+
+## The Houdini Way
+
+In Houdini, geometry isn't a fixed data structure. Instead, it's a collection of **points** with **attributes**. Want to add color? Add a `Cd` attribute. Want to store velocity? Add a `v` attribute. Want custom data? Add any attribute you want.
+
+This approach has profound benefits:
+- **No schema changes**: Adding new data doesn't require restructuring
+- **Pipeline flexibility**: Any node can read any attribute
+- **Clean data flow**: Data flows through attributes, not side channels
+
+## Attributes in CodeGraph
+
+CodeGraph applies this philosophy to code visualization:
+
+### Everything is a Node with Attributes
+
+A class in CodeGraph isn't a rigid `Class` object with fixed properties. It's a **node** with **attributes**:
+
+```json
+{
+  "id": "MyApp.UserService",
+  "name": "UserService",
+  "type": "Class",
+  "filePath": "/src/Services/UserService.cs",
+  "namespace": "MyApp.Services",
+  "visibility": "Public",
+  "isAbstract": false,
+  "layout:x": 123.45,
+  "layout:y": 67.89,
+  "layout:z": 0,
+  "git:churn": 45,
+  "git:authors": 3,
+  "coverage:percent": 85.5,
+  "complexity:cyclomatic": 12
+}
+```
+
+Notice how different concerns coexist on the same node:
+- **Core data**: `name`, `type`, `filePath`
+- **Layout data**: `layout:x`, `layout:y`, `layout:z`
+- **Git overlay**: `git:churn`, `git:authors`
+- **Coverage overlay**: `coverage:percent`
+- **Complexity overlay**: `complexity:cyclomatic`
+
+### Prefixed Attributes
+
+We use prefixes to organize attributes by source:
+
+| Prefix | Source | Purpose |
+|--------|--------|---------|
+| (none) | Core analysis | Essential node data |
+| `layout:` | Layout engine | 3D positions |
+| `git:` | Git plugin | Version control data |
+| `coverage:` | Coverage plugin | Test coverage data |
+| `complexity:` | Complexity plugin | Code metrics |
+
+This enables:
+- **Clean separation**: Each system owns its namespace
+- **Easy cleanup**: Remove all `git:*` attributes in one operation
+- **No conflicts**: Two plugins can't overwrite each other's data
+
+## Why This Matters
+
+### 1. Extensibility Without Schema Changes
+
+Traditional approach:
+```csharp
+// Adding git data requires changing the model
+public class CodeNode
+{
+    public string Name { get; set; }
+    public string Type { get; set; }
+    // New: git data
+    public int GitChurn { get; set; }        // Schema change!
+    public int GitAuthors { get; set; }       // Schema change!
+}
+```
+
+Attribute approach:
+```csharp
+// No schema change needed
+node.Attributes["git:churn"] = 45;
+node.Attributes["git:authors"] = 3;
+```
+
+### 2. Plugin Independence
+
+Each plugin writes its own attributes without knowing about others:
+
+```csharp
+// Git plugin
+await storage.UpdateNodeAttributesAsync(nodeId, new Dictionary<string, object>
+{
+    ["git:churn"] = churnValue,
+    ["git:authors"] = authorCount
+});
+
+// Coverage plugin (completely independent)
+await storage.UpdateNodeAttributesAsync(nodeId, new Dictionary<string, object>
+{
+    ["coverage:percent"] = coveragePercent,
+    ["coverage:lines"] = linesCovered
+});
+```
+
+### 3. Clean Removal
+
+Removing a plugin's data is trivial:
+
+```csharp
+await storage.RemoveAttributesByPrefixAsync("git:");
+```
+
+No need to know what attributes exist—just delete by prefix.
+
+### 4. Frontend Flexibility
+
+The frontend doesn't need to know about every possible attribute. It can:
+- Display any attribute in the inspector
+- Map any numeric attribute to color/size
+- Filter nodes by any attribute
+
+```typescript
+// Works for any attribute
+function getNodeColor(node: Node, attribute: string): Color {
+  const value = node.attributes[attribute];
+  return mapToGradient(value, colorScale);
+}
+```
+
+## Open Source Philosophy
+
+CodeGraph is open source under the **GPL-3.0 license**. This isn't just a licensing choice—it's a statement about how we believe software should be built.
+
+### Why GPL?
+
+<CardGroup cols={2}>
+  <Card title="Copyleft Protection" icon="shield">
+    If someone improves CodeGraph, those improvements must stay open. The community benefits from every contribution.
+  </Card>
+  <Card title="Commercial Use Allowed" icon="building">
+    Companies can use CodeGraph freely. They only need to share changes if they distribute a modified version.
+  </Card>
+</CardGroup>
+
+We chose GPL because we want CodeGraph to **grow through community contributions**, not become the foundation for closed-source competitors.
+
+## Summary
+
+CodeGraph's philosophy:
+
+1. **Everything is an attribute**: Nodes have dynamic attributes, not fixed schemas
+2. **Prefixed namespaces**: Each system owns its attribute prefix
+3. **Minimal coupling**: Plugins don't know about each other
+4. **Open source (GPL-3.0)**: Community contributions benefit everyone
+
+This creates a system that's infinitely extensible without ever changing the core data model—and ensures that extensibility remains open forever.
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Roadmap" icon="rocket" href="/roadmap">
+    Where CodeGraph is heading and how to contribute
+  </Card>
+  <Card title="Plugin System" icon="plug" href="/concepts/plugin-system">
+    Build plugins using the attribute system
+  </Card>
+</CardGroup>

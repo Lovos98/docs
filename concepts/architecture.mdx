@@ -1,0 +1,289 @@
+---
+title: Overview
+description: "Understanding CodeGraph's three-layer architecture"
+---
+
+# Architecture Overview
+
+CodeGraph is built on a three-layer architecture that separates concerns and enables extensibility through plugins and integrations.
+
+## The Three Layers
+
+<Steps>
+  <Step title="Analyzer" icon="magnifying-glass">
+    Parses source code and extracts structure (classes, methods, dependencies)
+  </Step>
+  <Step title="Graph Database" icon="database">
+    Stores the code structure as nodes and relationships
+  </Step>
+  <Step title="Visualization" icon="cube">
+    Renders the graph as an interactive 3D experience
+  </Step>
+</Steps>
+
+<CardGroup cols={3}>
+  <Card title="1. Analyzer" icon="magnifying-glass">
+    **Input:** `.cs`, `.sln`, `.csproj`
+
+    **Process:** Parse AST, resolve types
+
+    **Output:** Nodes and edges
+  </Card>
+  <Card title="2. Graph Database" icon="database">
+    **Nodes:** Code entities with attributes
+
+    **Edges:** Relationships between entities
+
+    **Queries:** Find dependencies, paths
+  </Card>
+  <Card title="3. Visualization" icon="cube">
+    **Rendering:** Three.js WebGL
+
+    **Layout:** ForceAtlas2 algorithm
+
+    **Interaction:** Navigate, select, filter
+  </Card>
+</CardGroup>
+
+Currently uses **Roslyn** for C#, with potential for other parsers (tree-sitter) in the future.
+
+## Hexagonal Architecture
+
+CodeGraph follows **hexagonal architecture** (ports and adapters). The core business logic sits in the center and knows nothing about the outside world.
+
+<Frame>
+  <div style={{ padding: '20px', textAlign: 'center' }}>
+    <img src="https://mermaid.ink/img/pako:eNp1kk1uwzAMhK9CaJ0cwAu3TbvooisjC0qibaGyZEhy0SDI3SvZTpO0yUYA5xvOkOINhLcEBfBYOxJhXOJq9cX0Ri0e7ZuIXi4WNq9Uw4aGKNZ2VYvx3Mbfv7qOydAQ7R3xeUcthbU1cSShbKBumDiH4DGkKI-k5-RqDGIK1tF9u_L5JHK5G4jgKE0sHB9gPQrN7B9onz7hSJLCONWbgWWbO-cslZf7OJH9A6F_QjjQiPnU4IyJk7Sj6KmjPg0hO7bGQdnr5uUWxkqn3iJYUxcrUAEpM5Y6sOzEcoNnKM6YUP2jmkNRxOiVz0b-gTPu6JBPp6cWGvs" alt="Hexagonal Architecture" />
+  </div>
+</Frame>
+
+### The Core
+
+The core contains pure business logic—no frameworks, no databases, no HTTP. It defines **ports** (interfaces) for everything it needs.
+
+### Driving Adapters (Input)
+
+Driving adapters **call into** the core. They handle incoming requests:
+
+<CardGroup cols={3}>
+  <Card title="CLI" icon="terminal">
+    **.NET Console**
+
+    Command-line interface for analysis
+  </Card>
+  <Card title="REST API" icon="globe">
+    **ASP.NET Core**
+
+    HTTP endpoints for the frontend
+  </Card>
+  <Card title="React Frontend" icon="browser">
+    **React + Three.js**
+
+    3D visualization and interaction
+  </Card>
+</CardGroup>
+
+### Driven Adapters (Output)
+
+Driven adapters are **called by** the core through ports:
+
+<CardGroup cols={3}>
+  <Card title="Roslyn Analyzer" icon="magnifying-glass">
+    **Microsoft.CodeAnalysis**
+
+    Implements `IStructuralAnalyzer`
+  </Card>
+  <Card title="Neo4j Storage" icon="database">
+    **Neo4j.Driver**
+
+    Implements `IGraphStorage`
+  </Card>
+  <Card title="GraphPU Layout" icon="microchip">
+    **Rust + Metal/Vulkan**
+
+    Implements `ILayoutCompute`
+  </Card>
+</CardGroup>
+
+<CardGroup cols={2}>
+  <Card title="LLM Client" icon="robot">
+    **OpenAI/Anthropic SDK**
+
+    Implements `ILlmClient`
+  </Card>
+  <Card title="Git Integration" icon="code-branch">
+    **LibGit2Sharp**
+
+    Implements `IGitRepository`
+  </Card>
+</CardGroup>
+
+## Ports
+
+The core defines interfaces (ports) that adapters implement. This allows swapping implementations without changing business logic.
+
+<AccordionGroup>
+  <Accordion title="IStructuralAnalyzer" icon="magnifying-glass">
+    Analyzes source code and extracts structure.
+
+    **Implementations:** Roslyn (C#), Tree-sitter (future)
+
+    ```csharp
+    public interface IStructuralAnalyzer
+    {
+        Task<AnalysisResult> AnalyzeAsync(string path, CancellationToken ct);
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="IGraphStorage" icon="database">
+    Persists and queries the code graph.
+
+    **Implementations:** Neo4j, Memgraph, In-Memory
+
+    ```csharp
+    public interface IGraphStorage
+    {
+        Task<IEnumerable<GraphNode>> GetNodesAsync(CancellationToken ct);
+        Task<IEnumerable<GraphEdge>> GetEdgesAsync(CancellationToken ct);
+        Task SaveAnalysisResultAsync(AnalysisResult result, CancellationToken ct);
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="ILayoutCompute" icon="microchip">
+    Computes node positions using force-directed algorithms.
+
+    **Implementations:** GraphPU (Metal), GraphPU (Vulkan), CPU Fallback
+
+    ```csharp
+    public interface ILayoutCompute
+    {
+        Task<LayoutResult> ComputeLayoutAsync(
+            IEnumerable<GraphNode> nodes,
+            IEnumerable<GraphEdge> edges,
+            CancellationToken ct);
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="ILlmClient" icon="robot">
+    Queries LLMs for RAG-based code understanding.
+
+    **Implementations:** OpenAI, Anthropic, Local LLM
+
+    ```csharp
+    public interface ILlmClient
+    {
+        Task<string> QueryAsync(string prompt, GraphContext context, CancellationToken ct);
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Data Flow
+
+<Steps>
+  <Step title="User triggers analysis">
+    Through CLI command or React UI button click
+  </Step>
+  <Step title="Driving adapter calls core">
+    The REST API receives the request and calls core business logic
+  </Step>
+  <Step title="Core orchestrates through ports">
+    Core calls `IStructuralAnalyzer.AnalyzeAsync()` — doesn't know it's Roslyn
+  </Step>
+  <Step title="Driven adapter does the work">
+    Roslyn adapter parses the code and returns nodes/edges
+  </Step>
+  <Step title="Core stores results">
+    Core calls `IGraphStorage.SaveAsync()` — doesn't know it's Neo4j
+  </Step>
+  <Step title="Response flows back">
+    Results return through the driving adapter to the user
+  </Step>
+</Steps>
+
+## Why This Separation?
+
+Each layer and adapter can evolve independently:
+
+| Component | Can be replaced with |
+|-----------|---------------------|
+| Roslyn | Tree-sitter for other languages |
+| Neo4j | Memgraph, PostgreSQL, or in-memory |
+| GraphPU | CPU-based layout, different algorithms |
+| React Frontend | Desktop app, VR client, VS Code extension |
+| OpenAI | Anthropic, local LLM, or no LLM |
+
+## Plugin System
+
+Plugins are just adapters that implement the same ports:
+
+```csharp
+public interface IOverlayPlugin
+{
+    string Id { get; }
+    string Name { get; }
+    Task ApplyAsync(IGraphStorage storage, CancellationToken ct);
+    Task RemoveAsync(IGraphStorage storage, CancellationToken ct);
+}
+```
+
+Community plugins are first-class citizens—they can do anything built-in components can do.
+
+| Plugin Type | Examples |
+|-------------|----------|
+| **Overlay plugins** | Git activity, test coverage, complexity metrics |
+| **Analyzer plugins** | TypeScript parser, Python parser |
+| **Export plugins** | JSON, GraphML, DOT format |
+
+## LLM Integration
+
+The graph database enables powerful AI integrations:
+
+<Card title="RAG for Code" icon="robot">
+  Connect an LLM to query your codebase architecture:
+  - "What classes handle authentication?"
+  - "Show me the data flow from API to database"
+  - "What would break if I remove this service?"
+</Card>
+
+## Benefits
+
+<CardGroup cols={2}>
+  <Card title="Testability" icon="flask-vial">
+    Mock any external dependency. Test business logic in isolation without databases or APIs.
+  </Card>
+  <Card title="Swappability" icon="arrows-rotate">
+    Replace any component without touching core. Switch databases, add languages, change LLM providers.
+  </Card>
+</CardGroup>
+
+## Why Not Alternatives?
+
+| Tool | Analysis | 3D Visualization | Community Plugins | Graph Queries |
+|------|:--------:|:----------------:|:-----------------:|:-------------:|
+| **CodeScene** | ✅ | ❌ | ❌ | ❌ |
+| **NDepend** | ✅ | ❌ | ❌ | ⚠️ |
+| **SonarQube** | ✅ | ❌ | ⚠️ | ❌ |
+| **Understand** | ✅ | ❌ | ❌ | ❌ |
+| **CodeGraph** | ✅ | ✅ | ✅ | ✅ |
+
+CodeGraph's unique value:
+
+1. **Interactive 3D visualization**: Explore your architecture spatially
+2. **Community plugins**: Anyone can extend functionality
+3. **Graph database backend**: Enables powerful queries and AI integration
+4. **Open architecture**: Swap any component without rewriting
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Philosophy" icon="lightbulb" href="/philosophy">
+    The attribute-only design philosophy
+  </Card>
+  <Card title="Graph Database" icon="database" href="/concepts/graph-database">
+    Why we use a graph database
+  </Card>
+</CardGroup>

@@ -1,0 +1,233 @@
+---
+title: Using Overlays
+description: "Add visual layers with git activity, coverage, and custom data"
+---
+
+# Using Overlays
+
+Overlays add additional visual information on top of your code graph. They change node colors, sizes, or add badges based on external data.
+
+## What Are Overlays?
+
+An overlay is a visual layer that augments the base graph with additional data:
+
+| Overlay | Data Source | Visual Effect |
+|---------|-------------|---------------|
+| Git Activity | Git history | Color by change frequency |
+| Test Coverage | Coverage reports | Color by coverage % |
+| Complexity | Static analysis | Size by complexity |
+| Code Ownership | Git blame | Color by author/team |
+
+## Available Overlays
+
+### Built-in Overlays
+
+```bash
+# List available overlays
+curl http://localhost:5050/api/overlays
+```
+
+```json
+{
+  "plugins": [
+    {
+      "id": "git-activity",
+      "name": "Git Activity",
+      "description": "Visualize code churn from git history",
+      "overlays": [
+        {
+          "id": "churn",
+          "name": "Change Frequency",
+          "type": "color",
+          "legend": { "low": "#22c55e", "high": "#ef4444" }
+        }
+      ]
+    },
+    {
+      "id": "test-coverage",
+      "name": "Test Coverage",
+      "description": "Show test coverage percentages",
+      "overlays": [
+        {
+          "id": "coverage",
+          "name": "Line Coverage",
+          "type": "color",
+          "legend": { "0%": "#ef4444", "50%": "#f59e0b", "100%": "#22c55e" }
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Applying an Overlay
+
+### Via UI
+
+1. Click the "Overlays" button in the toolbar
+2. Select an overlay from the list
+3. Click "Apply"
+
+### Via API
+
+```bash
+# Apply git activity overlay
+curl -X POST http://localhost:5050/api/overlays/git-activity/apply
+
+# Check application status
+curl http://localhost:5050/api/overlays/git-activity/status
+```
+
+### Via CLI
+
+```bash
+codegraph overlay apply git-activity
+codegraph overlay apply test-coverage --report coverage.xml
+```
+
+## Git Activity Overlay
+
+Shows which parts of your codebase change most frequently.
+
+### Setup
+
+```bash
+# Apply git activity (analyzes last 6 months by default)
+codegraph overlay apply git-activity
+
+# Custom time range
+codegraph overlay apply git-activity --since "2024-01-01" --until "2024-06-01"
+```
+
+### What It Shows
+
+| Metric | Visual | Meaning |
+|--------|--------|---------|
+| Change frequency | Color (green → red) | How often this file changes |
+| Lines changed | Node size | Total lines added/removed |
+| Authors | Badge | Number of contributors |
+
+<Tip>
+High churn + many authors often indicates problematic code that's hard to maintain.
+</Tip>
+
+## Test Coverage Overlay
+
+Visualize which code is tested.
+
+### Setup
+
+First, generate a coverage report:
+
+```bash
+# Using coverlet
+dotnet test --collect:"XPlat Code Coverage"
+```
+
+Then apply the overlay:
+
+```bash
+codegraph overlay apply test-coverage --report ./TestResults/*/coverage.cobertura.xml
+```
+
+### What It Shows
+
+| Coverage | Color |
+|----------|-------|
+| 0-30% | Red |
+| 30-70% | Yellow |
+| 70-90% | Light green |
+| 90-100% | Green |
+
+## Complexity Overlay
+
+Highlight complex code that might need refactoring.
+
+### Setup
+
+```bash
+codegraph overlay apply complexity
+```
+
+### Metrics
+
+| Metric | Description |
+|--------|-------------|
+| Cyclomatic complexity | Number of decision points |
+| Cognitive complexity | How hard to understand |
+| Lines of code | Raw size |
+
+## Code Ownership Overlay
+
+See who owns which parts of the codebase.
+
+### Setup
+
+```bash
+codegraph overlay apply ownership
+
+# With team mapping
+codegraph overlay apply ownership --teams teams.json
+```
+
+`teams.json`:
+```json
+{
+  "teams": {
+    "Platform": ["alice@example.com", "bob@example.com"],
+    "Product": ["carol@example.com", "dave@example.com"]
+  }
+}
+```
+
+### What It Shows
+
+- Each team gets a unique color
+- Shared ownership shows blended colors
+- Orphaned code (no recent commits) shows gray
+
+## Removing Overlays
+
+### Via UI
+
+1. Click "Overlays" button
+2. Click "Remove" next to active overlay
+
+### Via API
+
+```bash
+curl -X DELETE http://localhost:5050/api/overlays/git-activity/apply
+```
+
+### Via CLI
+
+```bash
+codegraph overlay remove git-activity
+```
+
+## Combining Overlays
+
+You can have multiple overlays active:
+
+```bash
+# Apply multiple overlays
+codegraph overlay apply git-activity
+codegraph overlay apply test-coverage --report coverage.xml
+
+# In UI, overlays can be toggled independently
+```
+
+## Creating Custom Overlays
+
+See the [Custom Overlays](/how-to/custom-overlays) guide to create your own.
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="GPU Layout" icon="microchip" href="/tutorials/gpu-layout">
+    Speed up layout for large graphs
+  </Card>
+  <Card title="Custom Overlays" icon="palette" href="/how-to/custom-overlays">
+    Create your own overlay plugins
+  </Card>
+</CardGroup>

@@ -1,0 +1,156 @@
+---
+title: Analyzer
+description: "What CodeGraph extracts from your codebase"
+---
+
+# Analyzer
+
+The analyzer is the first layer of CodeGraph. It parses your source code and extracts a graph of **nodes** (code entities) and **edges** (relationships between them).
+
+## How It Works
+
+<Steps>
+  <Step title="Open Solution">
+    Roslyn opens your `.sln` file and compiles all projects
+  </Step>
+  <Step title="Traverse Symbols">
+    Walk through namespaces, types, and members in the symbol tree
+  </Step>
+  <Step title="Extract Nodes">
+    Create a node for each code entity with its properties
+  </Step>
+  <Step title="Extract Edges">
+    Identify relationships between nodes (inheritance, calls, references)
+  </Step>
+</Steps>
+
+## Node Types
+
+Nodes represent code entities in your codebase. CodeGraph extracts 19 different node types:
+
+| Type | Category | Description |
+|------|----------|-------------|
+| `Namespace` | Container | Logical grouping of types |
+| `Class` | Container | Class definition |
+| `Struct` | Container | Value type definition |
+| `Interface` | Container | Interface contract |
+| `Enum` | Container | Enumeration type |
+| `Record` | Container | Record type (C# 9+) |
+| `Method` | Member | Method definition |
+| `Constructor` | Member | Constructor definition |
+| `Property` | Member | Property definition |
+| `Field` | Member | Field definition |
+| `Event` | Member | Event definition |
+| `Indexer` | Member | Indexer definition |
+| `Operator` | Member | Operator overload |
+| `Parameter` | Other | Method/constructor parameter |
+| `LocalVariable` | Other | Local variable |
+| `EnumMember` | Other | Enum value |
+| `Delegate` | Other | Delegate type |
+| `Lambda` | Other | Lambda expression |
+
+## Edge Types
+
+Edges represent relationships between nodes:
+
+| Edge | Category | Description | Example | Status |
+|------|----------|-------------|---------|--------|
+| `Contains` | Structural | Parent contains child | `Namespace` → `Class` | Implemented |
+| `Inherits` | Structural | Class extends base | `AdminUser` → `User` | Implemented |
+| `Implements` | Structural | Type implements interface | `UserService` → `IUserService` | Implemented |
+| `Overrides` | Structural | Method overrides base | `Derived.DoWork()` → `Base.DoWork()` | Implemented |
+| `Calls` | Coupling | Method invokes another | `CreateOrder()` → `GetUser()` | Implemented |
+| `Instantiates` | Coupling | Creates instance via `new` | `Handler` → `new Service()` | Implemented |
+| `References` | Coupling | Type/member reference | Field types, return types, parameters | Implemented |
+| `Reads` | DataFlow | Accesses field/property value | `GetName()` reads `_name` | Planned |
+| `Writes` | DataFlow | Assigns to field/property | `SetName()` writes `_name` | Planned |
+| `Returns` | DataFlow | Method returns a type | `GetUser()` returns `User` | Planned |
+| `Creates` | DataFlow | Method instantiates a type | `CreateOrder()` creates `Order` | Planned |
+| `Throws` | DataFlow | Method can throw exception | `Validate()` throws `ValidationException` | Planned |
+| `DataFlowsTo` | DataFlow | Data flows from variable A to B | Track through assignments | Planned |
+
+<Note>
+The `References` edge captures type dependencies from field types, method return types, parameter types, and generic type arguments.
+</Note>
+
+## Node Properties
+
+Each node carries properties extracted during analysis:
+
+```json
+{
+  "id": "MyApp.Services.UserService",
+  "name": "UserService",
+  "type": "Class",
+  "fullName": "MyApp.Services.UserService",
+  "filePath": "/src/Services/UserService.cs",
+  "namespace": "MyApp.Services",
+  "visibility": "Public",
+  "isAbstract": false,
+  "isStatic": false,
+  "isSealed": false
+}
+```
+
+### Properties by Type
+
+<AccordionGroup>
+  <Accordion title="Types (Class, Struct, Interface, Record)">
+    - `fullName` - Fully qualified name
+    - `visibility` - Public, Internal, Private, Protected
+    - `isAbstract` - Abstract class/method
+    - `isSealed` - Sealed/final class
+    - `isStatic` - Static class
+    - `baseType` - Base class (for inheritance)
+    - `interfaces` - Implemented interfaces
+  </Accordion>
+
+  <Accordion title="Methods & Constructors">
+    - `signature` - Full method signature with parameters
+    - `returnType` - Return type
+    - `visibility` - Access modifier
+    - `isStatic` - Static method
+    - `isAbstract` - Abstract method
+    - `isVirtual` - Virtual method
+    - `isOverride` - Override method
+    - `isAsync` - Async method
+  </Accordion>
+
+  <Accordion title="Properties & Fields">
+    - `type` - Property/field type
+    - `visibility` - Access modifier
+    - `isStatic` - Static member
+    - `isReadOnly` - Read-only field or get-only property
+    - `isConst` - Constant field
+  </Accordion>
+
+  <Accordion title="Parameters">
+    - `type` - Parameter type
+    - `isRef` - ref parameter
+    - `isOut` - out parameter
+    - `isParams` - params array
+    - `hasDefault` - Has default value
+  </Accordion>
+</AccordionGroup>
+
+## Filtering
+
+The analyzer only extracts **source symbols**:
+
+- Types and members defined in your code
+- No BCL/Framework types (System.String, etc.)
+- No compiler-generated members
+- No implicit declarations
+
+This keeps the graph focused on your architecture, not the entire .NET ecosystem.
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Graph Database" icon="database" href="/concepts/graph-database">
+    How the graph is stored and queried
+  </Card>
+  <Card title="Supported Languages" icon="code" href="/concepts/supported-languages">
+    Current and planned language support
+  </Card>
+</CardGroup>

@@ -1,0 +1,362 @@
+---
+title: Custom Overlays
+description: "Create your own overlay plugin for CodeGraph"
+---
+
+# Custom Overlays
+
+This guide walks you through creating a custom overlay plugin for CodeGraph.
+
+## Overview
+
+A custom overlay:
+1. Implements the `IOverlayPlugin` interface
+2. Defines what visual overlays it provides
+3. Applies data by writing node attributes
+4. Removes data by clearing those attributes
+
+## Step 1: Create the Project
+
+```bash
+# Create a new class library
+dotnet new classlib -n MyCompany.CodeGraph.OwnershipPlugin
+cd MyCompany.CodeGraph.OwnershipPlugin
+
+# Add CodeGraph reference
+dotnet add reference ../src/core/CodeGraph.Core.csproj
+```
+
+## Step 2: Implement IOverlayPlugin
+
+This example creates a **Code Ownership** plugin that reads from CODEOWNERS and git history:
+
+```csharp
+using CodeGraph.Core.Ports.Overlay;
+using CodeGraph.Core.Ports.Storage;
+
+namespace MyCompany.CodeGraph.OwnershipPlugin;
+
+public class OwnershipPlugin : IOverlayPlugin
+{
+    public string Id => "ownership";
+    public string Name => "Code Ownership";
+    public string Description => "Show team ownership based on CODEOWNERS and git history";
+
+    public OverlayDefinition[] Overlays => new[]
+    {
+        // Color by author count (more authors = potential coordination overhead)
+        new OverlayDefinition
+        {
+            Id = "author-count",
+            Name = "Author Count",
+            Type = OverlayType.Color,
+            Attribute = "ownership:authorCount",
+            Legend = new GradientLegend
+            {
+                Stops = new[]
+                {
+                    new LegendStop(1, "#22c55e", "Single owner"),
+                    new LegendStop(3, "#f59e0b", "Few authors"),
+                    new LegendStop(10, "#ef4444", "Many authors")
+                }
+            }
+        },
+        // Badge showing the primary team
+        new OverlayDefinition
+        {
+            Id = "team",
+            Name = "Team",
+            Type = OverlayType.Badge,
+            Attribute = "ownership:team",
+            Legend = new CategoryLegend(new Dictionary<string, string>
+            {
+                ["Platform"] = "#3b82f6",
+                ["Product"] = "#10b981",
+                ["Infrastructure"] = "#f59e0b",
+                ["Unknown"] = "#6b7280"
+            })
+        }
+    };
+
+    private readonly string _repoPath;
+    private readonly CodeOwnersParser _codeOwners;
+
+    public OwnershipPlugin(string repoPath)
+    {
+        _repoPath = repoPath;
+        _codeOwners = new CodeOwnersParser(Path.Combine(repoPath, "CODEOWNERS"));
+    }
+
+    public async Task ApplyAsync(IGraphStorage storage, CancellationToken ct)
+    {
+        var nodes = await storage.GetNodesAsync(ct);
+        var repo = new Repository(_repoPath);
+
+        foreach (var node in nodes)
+        {
+            if (node.FilePath == null) continue;
+
+            // Get ownership from CODEOWNERS
+            var team = _codeOwners.GetOwner(node.FilePath) ?? "Unknown";
+
+            // Get author stats from git
+            var commits = repo.Commits.QueryBy(node.FilePath).ToList();
+            var authors = commits
+                .Select(c => c.Author.Email)
+                .Distinct()
+                .ToList();
+
+            var primaryAuthor = commits
+                .GroupBy(c => c.Author.Email)
+                .OrderByDescending(g => g.Count())
+                .FirstOrDefault()?.Key;
+
+            // Update node attributes
+            await storage.UpdateNodeAttributesAsync(
+                node.Id,
+                new Dictionary<string, object>
+                {
+                    ["ownership:team"] = team,
+                    ["ownership:authorCount"] = authors.Count,
+                    ["ownership:primaryAuthor"] = primaryAuthor ?? "Unknown",
+                    ["ownership:authors"] = string.Join(",", authors),
+                    ["ownership:shared"] = authors.Count > 3
+                },
+                ct
+            );
+        }
+    }
+
+    public async Task RemoveAsync(IGraphStorage storage, CancellationToken ct)
+    {
+        await storage.RemoveAttributesByPrefixAsync("ownership:", ct);
+    }
+}
+```
+
+## Step 3: Add Configuration
+
+```csharp
+public class OwnershipConfig
+{
+    public string RepoPath { get; set; } = ".";
+    public Dictionary<string, string> TeamMappings { get; set; } = new();
+}
+
+public class OwnershipPlugin : IOverlayPlugin
+{
+    private readonly OwnershipConfig _config;
+
+    public OwnershipPlugin(IOptions<OwnershipConfig> config)
+    {
+        _config = config.Value;
+    }
+
+    // ...
+}
+```
+
+```json
+// appsettings.json
+{
+  "Plugins": {
+    "Ownership": {
+      "RepoPath": "/path/to/repo",
+      "TeamMappings": {
+        "@platform-team": "Platform",
+        "@product-team": "Product",
+        "@infra-team": "Infrastructure"
+      }
+    }
+  }
+}
+```
+
+## Step 4: Register the Plugin
+
+### Option A: Direct Registration
+
+```csharp
+// In Program.cs
+services.Configure<OwnershipConfig>(configuration.GetSection("Plugins:Ownership"));
+services.AddSingleton<IOverlayPlugin, OwnershipPlugin>();
+```
+
+### Option B: Plugin Discovery
+
+Place the compiled DLL in `plugins/`:
+
+```
+plugins/
+└── MyCompany.CodeGraph.OwnershipPlugin.dll
+```
+
+CodeGraph scans this directory at startup.
+
+## Step 5: Test Your Plugin
+
+```csharp
+[TestClass]
+public class OwnershipPluginTests
+{
+    [TestMethod]
+    public async Task ApplyAsync_WritesOwnershipData()
+    {
+        // Arrange
+        var mockStorage = new Mock<IGraphStorage>();
+        mockStorage.Setup(s => s.GetNodesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[]
+            {
+                new GraphNode { Id = "1", FilePath = "/src/Services/UserService.cs" }
+            });
+
+        var plugin = new OwnershipPlugin("/path/to/repo");
+
+        // Act
+        await plugin.ApplyAsync(mockStorage.Object, CancellationToken.None);
+
+        // Assert
+        mockStorage.Verify(s => s.UpdateNodeAttributesAsync(
+            "1",
+            It.Is<Dictionary<string, object>>(d =>
+                d.ContainsKey("ownership:team") &&
+                d.ContainsKey("ownership:authorCount")
+            ),
+            It.IsAny<CancellationToken>()
+        ));
+    }
+}
+```
+
+## Advanced: Progress Reporting
+
+For long-running operations:
+
+```csharp
+public async Task ApplyAsync(
+    IGraphStorage storage,
+    IProgress<PluginProgress>? progress,
+    CancellationToken ct)
+{
+    var nodes = (await storage.GetNodesAsync(ct)).ToList();
+    var total = nodes.Count;
+
+    for (int i = 0; i < nodes.Count; i++)
+    {
+        var node = nodes[i];
+
+        // Process node...
+
+        // Report progress
+        progress?.Report(new PluginProgress
+        {
+            Current = i + 1,
+            Total = total,
+            Percentage = (int)((i + 1) * 100.0 / total),
+            Message = $"Processing {node.Name}"
+        });
+
+        ct.ThrowIfCancellationRequested();
+    }
+}
+```
+
+## Advanced: Multiple Overlays
+
+A single plugin can provide multiple overlays:
+
+```csharp
+public OverlayDefinition[] Overlays => new[]
+{
+    new OverlayDefinition
+    {
+        Id = "author-count",
+        Name = "Author Count",
+        Type = OverlayType.Color,
+        Attribute = "ownership:authorCount"
+    },
+    new OverlayDefinition
+    {
+        Id = "team",
+        Name = "Team",
+        Type = OverlayType.Badge,
+        Attribute = "ownership:team"
+    },
+    new OverlayDefinition
+    {
+        Id = "shared-code",
+        Name = "Shared Code",
+        Type = OverlayType.Color,
+        Attribute = "ownership:shared",
+        Legend = new CategoryLegend(new Dictionary<string, string>
+        {
+            ["true"] = "#ef4444",  // Red = shared by many
+            ["false"] = "#22c55e" // Green = clear ownership
+        })
+    }
+};
+```
+
+## More Plugin Ideas
+
+Here are some plugins you could build:
+
+| Plugin | Attributes | Use Case |
+|--------|------------|----------|
+| **SonarQube** | `sonar:bugs`, `sonar:vulnerabilities`, `sonar:codeSmells` | Quality metrics |
+| **Build Times** | `build:avgDuration`, `build:failures` | CI/CD insights |
+| **PR Activity** | `pr:openCount`, `pr:avgReviewTime` | Review bottlenecks |
+| **Dependencies** | `deps:outdated`, `deps:vulnerabilities` | Security scanning |
+| **Documentation** | `docs:coverage`, `docs:staleness` | Doc quality |
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use consistent attribute prefixes">
+    Always prefix your attributes with your plugin ID to avoid conflicts:
+    ```csharp
+    ["ownership:team"]    // Good
+    ["team"]              // Bad - might conflict
+    ```
+  </Accordion>
+
+  <Accordion title="Handle missing data gracefully">
+    Not all nodes will have data from your source:
+    ```csharp
+    if (data.TryGetValue(node.FilePath, out var nodeData))
+    {
+        // Apply data
+    }
+    // Don't throw - just skip nodes without data
+    ```
+  </Accordion>
+
+  <Accordion title="Support cancellation">
+    Check the cancellation token in loops:
+    ```csharp
+    foreach (var node in nodes)
+    {
+        ct.ThrowIfCancellationRequested();
+        // Process...
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Clean up completely">
+    Remove ALL attributes your plugin adds:
+    ```csharp
+    await storage.RemoveAttributesByPrefixAsync("ownership:", ct);
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Plugin System" icon="plug" href="/concepts/plugin-system">
+    Deep dive into the plugin architecture
+  </Card>
+  <Card title="Philosophy" icon="lightbulb" href="/philosophy">
+    Understand the attribute-first design
+  </Card>
+</CardGroup>

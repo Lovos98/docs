@@ -1,0 +1,79 @@
+---
+title: Roadmap
+description: "Where CodeGraph is heading"
+---
+
+# Roadmap
+
+CodeGraph is actively evolving. Here's what we're working on and where we need community help.
+
+<CardGroup cols={3}>
+  <Card title="Dataflow Analysis" icon="arrows-split-up-and-left">
+    Track how data flows through your code. See field reads/writes and identify taint sources for security analysis.
+  </Card>
+  <Card title="LLM / RAG Integration" icon="robot">
+    Ask questions about your architecture in natural language. "What depends on this?" "What breaks if I remove this?"
+  </Card>
+  <Card title="Multi-Language Support" icon="code">
+    TypeScript, Python, Java, Go, and more via tree-sitter parsers.
+  </Card>
+</CardGroup>
+
+## Planned Edge Types
+
+These relationships are defined but not yet implemented:
+
+| Edge | Category | Description |
+|------|----------|-------------|
+| `Reads` | DataFlow | Method reads a field/property |
+| `Writes` | DataFlow | Method writes a field/property |
+| `Returns` | DataFlow | Method returns a type |
+| `Creates` | DataFlow | Method instantiates a type |
+| `Throws` | DataFlow | Method can throw exception |
+| `DataFlowsTo` | DataFlow | Data flows from variable A to B |
+
+See the [Analyzer](/concepts/analyzer) page for currently implemented edges.
+
+## Growing Together
+
+CodeGraph solves a real problem: understanding large codebases is hard. But we can't build every feature ourselves. We need help with:
+
+<CardGroup cols={2}>
+  <Card title="Language Plugins" icon="code">
+    Tree-sitter parsers for TypeScript, Python, Java, Go, Rust
+  </Card>
+  <Card title="Overlay Plugins" icon="layer-group">
+    SonarQube metrics, code ownership, custom business rules
+  </Card>
+  <Card title="Export Plugins" icon="file-export">
+    Confluence, Notion, custom dashboards
+  </Card>
+  <Card title="Visualization Experiments" icon="cube">
+    VR mode, AR overlays, different layout algorithms
+  </Card>
+</CardGroup>
+
+The GPL-3.0 license ensures that as CodeGraph grows, **everyone benefits**. Improvements flow back to the community, and no single company can lock away the best features.
+
+## How to Contribute
+
+We welcome contributions of all sizes:
+
+1. **Use it** and report issues
+2. **Write plugins** for your use case
+3. **Improve docs** when something is unclear
+4. **Add language support** through analyzer plugins
+5. **Fix bugs** and submit PRs
+
+See our [Contributing Guide](/contributing/overview) to get started.
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Philosophy" icon="lightbulb" href="/philosophy">
+    The attribute-only design philosophy
+  </Card>
+  <Card title="Plugin System" icon="plug" href="/concepts/plugin-system">
+    Build your own plugins
+  </Card>
+</CardGroup>

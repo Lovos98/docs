@@ -1,0 +1,82 @@
+---
+title: Introduction
+description: "Visualize your codebase as an interactive 3D graph"
+---
+
+# CodeGraph
+
+CodeGraph transforms your codebase into an interactive 3D graph. See your architecture, explore dependencies, and understand structure that's invisible in traditional code navigation.
+
+## Three Layers
+
+CodeGraph is built on three layers—each does one job:
+
+<Steps>
+  <Step title="Analyze" icon="magnifying-glass">
+    Parse your source code and understand its structure
+  </Step>
+  <Step title="Extract" icon="diagram-project">
+    Pull out classes, methods, dependencies, inheritance, and call relationships into a graph database
+  </Step>
+  <Step title="Visualize" icon="cube">
+    Render the graph as an interactive 3D space you can explore
+  </Step>
+</Steps>
+
+That's it. Code goes in, explorable architecture comes out.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="3D Exploration" icon="cube">
+    Navigate your codebase spatially. Zoom, rotate, click through your architecture.
+  </Card>
+  <Card title="Graph Queries" icon="database">
+    Ask questions: "What depends on this?" "Shortest path between modules?" "What breaks if I remove this?"
+  </Card>
+  <Card title="GPU Layout" icon="microchip">
+    Fast force-directed layout for graphs with thousands of nodes.
+  </Card>
+  <Card title="Plugin System" icon="plug">
+    Add overlays for git activity, test coverage, complexity, and custom metrics.
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+```bash
+# Analyze a .NET solution
+codegraph analyze ./MyProject.sln
+
+# Start the visualization
+codegraph serve
+
+# Open http://localhost:5173
+```
+
+## Roadmap
+
+We're actively developing new capabilities:
+
+<CardGroup cols={3}>
+  <Card title="Dataflow Analysis" icon="arrows-split-up-and-left">
+    Track how data flows through your code. See field reads/writes and identify taint sources.
+  </Card>
+  <Card title="LLM / RAG Integration" icon="robot">
+    Ask questions about your architecture in natural language. "What depends on this?" "What breaks if I remove this?"
+  </Card>
+  <Card title="Multi-Language Support" icon="code">
+    TypeScript, Python, Java, and more via tree-sitter parsers.
+  </Card>
+</CardGroup>
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/get-started/installation">
+    Install CodeGraph and dependencies
+  </Card>
+  <Card title="Roadmap" icon="rocket" href="/roadmap">
+    Full roadmap and how to contribute
+  </Card>
+</CardGroup>

@@ -1,0 +1,109 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "CodeGraph",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#6366F1",
+    "light": "#818CF8",
+    "dark": "#4F46E5",
+    "anchors": {
+      "from": "#6366F1",
+      "to": "#A855F7"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/rofox/codegraph"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "/get-started/installation"
+  },
+  "tabs": [
+    {
+      "name": "Documentation",
+      "url": "/"
+    },
+    {
+      "name": "API Reference",
+      "url": "/api-reference"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Introduction",
+      "pages": [
+        "introduction",
+        "why-codegraph",
+        "philosophy",
+        "roadmap"
+      ]
+    },
+    {
+      "group": "Getting Started",
+      "pages": [
+        "get-started/installation",
+        "get-started/quickstart",
+        "get-started/configuration"
+      ]
+    },
+    {
+      "group": "Tutorials",
+      "pages": [
+        "tutorials/analyze-first-codebase",
+        "tutorials/explore-3d-graph",
+        "tutorials/using-overlays",
+        "how-to/custom-overlays"
+      ]
+    },
+    {
+      "group": "Architecture",
+      "pages": [
+        "concepts/architecture",
+        "concepts/analyzer",
+        "concepts/graph-database",
+        "concepts/gpu-layout-engine",
+        "concepts/plugin-system",
+        "concepts/overlay-system"
+      ]
+    },
+    {
+      "group": "Reference",
+      "pages": [
+        "concepts/supported-languages",
+        "how-to/cli-commands",
+        "how-to/api-usage",
+        "how-to/large-codebases"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "api-reference/introduction",
+        "api-reference/graph",
+        "api-reference/layout",
+        "api-reference/overlays"
+      ]
+    },
+    {
+      "group": "Community",
+      "pages": [
+        "contributing/overview",
+        "contributing/development-setup"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/rofox/codegraph"
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true
+  }
+}

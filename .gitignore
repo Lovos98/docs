@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Mintlify
+.mintlify/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build
+.next/
+out/
+dist/

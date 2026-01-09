@@ -1,0 +1,124 @@
+---
+title: Quickstart
+description: "Analyze and visualize your first codebase in 5 minutes"
+---
+
+# Quickstart
+
+This guide will get you from zero to visualizing a codebase in under 5 minutes.
+
+<Note>
+Make sure you've completed the [Installation](/get-started/installation) guide first.
+</Note>
+
+## Step 1: Analyze a Codebase
+
+Let's analyze a .NET solution. You can use any `.sln` file, or try CodeGraph on itself:
+
+```bash
+npx @dotenvx/dotenvx run -- sh -c 'dotnet run --project src/adapters/driving/cli -- analyze ./CodeGraph.sln'
+```
+
+<Info>
+The `sh -c` wrapper is needed because some systems have a binary called `analyze` in PATH that can interfere with argument parsing.
+</Info>
+
+You'll see output like:
+
+```
+Analyzing ./CodeGraph.sln...
+Found 12 projects
+Extracting nodes... 847 classes, 234 interfaces
+Extracting edges... 2,341 dependencies
+Saving to Neo4j... done
+
+Analysis complete!
+  - Nodes: 1,081
+  - Edges: 2,341
+  - Time: 4.2s
+```
+
+## Step 2: Start the API Server
+
+In your first terminal:
+
+```bash
+npx @dotenvx/dotenvx run -- dotnet run --project src/adapters/driving/api
+```
+
+The API server starts on `http://localhost:5050`.
+
+## Step 3: Start the Web Frontend
+
+In a second terminal:
+
+```bash
+cd src/adapters/driving/web
+pnpm dev
+```
+
+The frontend starts on `http://localhost:5173`.
+
+## Step 4: Explore!
+
+Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+<Frame>
+  <img src="/images/first-visualization.png" alt="Your first CodeGraph visualization" />
+</Frame>
+
+### Controls
+
+| Action | Mouse | Keyboard |
+|--------|-------|----------|
+| Rotate | Left click + drag | - |
+| Pan | Right click + drag | Arrow keys |
+| Zoom | Scroll wheel | +/- |
+| Select node | Click | - |
+| Focus node | Double-click | - |
+
+## One-Command Startup
+
+For convenience, you can start everything with a single command:
+
+```bash
+./start.sh
+```
+
+This starts:
+- Neo4j (checks if running, starts if not)
+- GraphPU GPU Server (if available)
+- API Server
+- Web Frontend
+
+Press `Ctrl+C` to stop all services.
+
+## Try Different Codebases
+
+```bash
+# Analyze any .NET solution
+codegraph analyze /path/to/YourProject.sln
+
+# Analyze with verbose output
+codegraph analyze ./Project.sln --verbose
+
+# Analyze specific project only
+codegraph analyze ./Project.csproj
+```
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Explore the 3D Graph" icon="cube" href="/tutorials/explore-3d-graph">
+    Learn navigation controls and features
+  </Card>
+  <Card title="Using Overlays" icon="layer-group" href="/tutorials/using-overlays">
+    Add git activity, coverage, and more
+  </Card>
+  <Card title="GPU Layout" icon="microchip" href="/tutorials/gpu-layout">
+    Speed up layout for large graphs
+  </Card>
+  <Card title="Configuration" icon="gear" href="/get-started/configuration">
+    Customize CodeGraph for your needs
+  </Card>
+</CardGroup>

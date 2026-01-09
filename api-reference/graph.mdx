@@ -1,0 +1,235 @@
+---
+title: Graph API
+description: "Endpoints for retrieving and manipulating graph data"
+---
+
+# Graph API
+
+Endpoints for retrieving and manipulating the code graph.
+
+## Get Graph
+
+Retrieve all nodes and edges with their attributes.
+
+<ParamField path="GET" type="/api/graph">
+  Returns the complete graph structure.
+</ParamField>
+
+### Response
+
+```json
+{
+  "nodes": [
+    {
+      "id": "MyApp.Services.UserService",
+      "name": "UserService",
+      "type": "Class",
+      "fullName": "MyApp.Services.UserService",
+      "filePath": "/src/Services/UserService.cs",
+      "namespace": "MyApp.Services",
+      "visibility": "Public",
+      "isAbstract": false,
+      "layout:x": 123.45,
+      "layout:y": 67.89,
+      "layout:z": 0
+    }
+  ],
+  "edges": [
+    {
+      "source": "MyApp.Services.UserService",
+      "target": "MyApp.Data.UserRepository",
+      "type": "DEPENDS_ON"
+    }
+  ]
+}
+```
+
+### Example
+
+```bash
+curl http://localhost:5050/api/graph
+```
+
+---
+
+## Get Node
+
+Retrieve a single node by ID.
+
+<ParamField path="GET" type="/api/graph/nodes/{nodeId}">
+  Returns a single node with all attributes.
+</ParamField>
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `nodeId` | string | The node's unique identifier |
+
+### Response
+
+```json
+{
+  "id": "MyApp.Services.UserService",
+  "name": "UserService",
+  "type": "Class",
+  "fullName": "MyApp.Services.UserService",
+  "filePath": "/src/Services/UserService.cs",
+  "namespace": "MyApp.Services",
+  "visibility": "Public",
+  "layout:x": 123.45,
+  "layout:y": 67.89,
+  "layout:z": 0,
+  "git:churn": 45,
+  "coverage:percent": 85.5
+}
+```
+
+### Example
+
+```bash
+curl http://localhost:5050/api/graph/nodes/MyApp.Services.UserService
+```
+
+---
+
+## Save Layout
+
+Save node positions to the database.
+
+<ParamField path="POST" type="/api/graph/layout">
+  Persists layout positions for all nodes.
+</ParamField>
+
+### Request Body
+
+```json
+{
+  "positions": {
+    "MyApp.Services.UserService": [123.45, 67.89, 0],
+    "MyApp.Data.UserRepository": [234.56, 78.90, 0]
+  }
+}
+```
+
+### Response
+
+```json
+{
+  "success": true,
+  "updated": 156
+}
+```
+
+### Example
+
+```bash
+curl -X POST http://localhost:5050/api/graph/layout \
+  -H "Content-Type: application/json" \
+  -d '{
+    "positions": {
+      "node1": [100, 200, 0],
+      "node2": [150, 250, 0]
+    }
+  }'
+```
+
+---
+
+## Clear Layout
+
+Remove all layout positions from nodes.
+
+<ParamField path="DELETE" type="/api/graph/layout">
+  Clears all `layout:` prefixed attributes.
+</ParamField>
+
+### Response
+
+```json
+{
+  "success": true,
+  "cleared": 156
+}
+```
+
+### Example
+
+```bash
+curl -X DELETE http://localhost:5050/api/graph/layout
+```
+
+---
+
+## Get Layout Status
+
+Check how many nodes have layout positions.
+
+<ParamField path="GET" type="/api/graph/layout/status">
+  Returns layout statistics.
+</ParamField>
+
+### Response
+
+```json
+{
+  "totalNodes": 1081,
+  "nodesWithLayout": 1081,
+  "nodesWithoutLayout": 0,
+  "complete": true
+}
+```
+
+### Example
+
+```bash
+curl http://localhost:5050/api/graph/layout/status
+```
+
+---
+
+## Node Attributes
+
+Nodes contain both core attributes and overlay-specific attributes:
+
+### Core Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `id` | string | Unique identifier |
+| `name` | string | Entity name |
+| `type` | string | Node type (Class, Interface, etc.) |
+| `fullName` | string | Fully qualified name |
+| `filePath` | string | Source file path |
+| `namespace` | string | Containing namespace |
+| `visibility` | string | Access modifier |
+| `isAbstract` | boolean | Whether abstract |
+| `isStatic` | boolean | Whether static |
+
+### Layout Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `layout:x` | number | X position |
+| `layout:y` | number | Y position |
+| `layout:z` | number | Z position |
+
+### Overlay Attributes
+
+Attributes prefixed with the overlay name:
+
+| Prefix | Example | Description |
+|--------|---------|-------------|
+| `git:` | `git:churn` | Git activity data |
+| `coverage:` | `coverage:percent` | Test coverage data |
+| `complexity:` | `complexity:cyclomatic` | Complexity metrics |
+
+## Edge Types
+
+| Type | Description |
+|------|-------------|
+| `CONTAINS` | Namespace contains entity |
+| `DEPENDS_ON` | Uses/references |
+| `INHERITS` | Class inheritance |
+| `IMPLEMENTS` | Interface implementation |
+| `CALLS` | Method invocation |

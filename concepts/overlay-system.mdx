@@ -1,0 +1,200 @@
+---
+title: Overlay System
+description: "How overlays add visual layers to your graph"
+---
+
+# Overlay System
+
+The overlay system allows you to layer additional data on top of the base code graph. Overlays change node colors, sizes, and add visual indicators based on external data sources.
+
+## How Overlays Work
+
+Overlays add **attributes** to existing nodes. The visualization then uses these attributes to modify the display:
+
+<Steps>
+  <Step title="Base Graph">
+    Your code structure with nodes (classes, methods) and edges (dependencies, calls).
+  </Step>
+  <Step title="Apply Overlay">
+    A plugin analyzes external data (git, coverage, etc.) and writes attributes to nodes.
+  </Step>
+  <Step title="Visualize">
+    The frontend reads these attributes and maps them to colors, sizes, or badges.
+  </Step>
+</Steps>
+
+## Attribute Prefixes
+
+Each overlay stores data with a unique prefix to avoid conflicts:
+
+| Prefix | Overlay | Example Attributes |
+|--------|---------|-------------------|
+| `git:` | Git Activity | `git:churn`, `git:authors`, `git:lastModified` |
+| `coverage:` | Test Coverage | `coverage:percent`, `coverage:lines`, `coverage:branches` |
+| `complexity:` | Complexity | `complexity:cyclomatic`, `complexity:cognitive` |
+| `ownership:` | Code Ownership | `ownership:team`, `ownership:author` |
+| `layout:` | Layout (built-in) | `layout:x`, `layout:y`, `layout:z` |
+
+This prefix system enables clean removal—just delete all attributes starting with a prefix.
+
+## Overlay Definition
+
+Each overlay defines how it should be visualized:
+
+```typescript
+interface OverlayDefinition {
+  id: string;           // Unique identifier
+  name: string;         // Display name
+  type: 'color' | 'size' | 'badge';
+  attribute: string;    // Which node attribute to visualize
+  legend: Legend;       // How to interpret values
+  defaultEnabled: boolean;
+}
+```
+
+### Visual Types
+
+| Type | Effect | Use Case |
+|------|--------|----------|
+| `color` | Changes node color | Continuous values (coverage %) |
+| `size` | Changes node size | Magnitude values (complexity) |
+| `badge` | Adds icon/label | Categorical data (team name) |
+
+## Built-in Overlays
+
+### Git Activity
+
+Shows code churn and authorship:
+
+| Attribute | Description |
+|-----------|-------------|
+| `git:churn` | Number of changes to this file |
+| `git:authors` | Number of unique contributors |
+| `git:lastModified` | Date of last change |
+
+**Use case**: Find hotspots that change frequently and might need refactoring.
+
+### Test Coverage
+
+Shows which code is tested:
+
+| Attribute | Description |
+|-----------|-------------|
+| `coverage:percent` | Line coverage percentage |
+| `coverage:lines` | Number of covered lines |
+| `coverage:branches` | Branch coverage percentage |
+
+**Use case**: Identify untested code that needs attention.
+
+### Complexity
+
+Shows code complexity metrics:
+
+| Attribute | Description |
+|-----------|-------------|
+| `complexity:cyclomatic` | Cyclomatic complexity |
+| `complexity:cognitive` | Cognitive complexity |
+| `complexity:loc` | Lines of code |
+
+**Use case**: Find overly complex code that's hard to maintain.
+
+### Code Ownership
+
+Shows team boundaries:
+
+| Attribute | Description |
+|-----------|-------------|
+| `ownership:team` | Primary team owner |
+| `ownership:author` | Primary author |
+| `ownership:shared` | Whether multiple teams touch this |
+
+**Use case**: Understand team boundaries and potential conflicts.
+
+## API Flow
+
+### 1. List Available Overlays
+
+```bash
+GET /api/overlays
+```
+
+Returns all plugins and their overlay definitions.
+
+### 2. Apply Overlay
+
+```bash
+POST /api/overlays/git-activity/apply
+```
+
+Runs the plugin, which writes attributes to nodes.
+
+### 3. Fetch Graph
+
+```bash
+GET /api/graph
+```
+
+Nodes now include overlay attributes:
+
+```json
+{
+  "nodes": [
+    {
+      "id": "MyApp.UserService",
+      "name": "UserService",
+      "type": "Class",
+      "git:churn": 45,
+      "git:authors": 3,
+      "coverage:percent": 85.5
+    }
+  ]
+}
+```
+
+### 4. Remove Overlay
+
+```bash
+DELETE /api/overlays/git-activity/apply
+```
+
+Removes all attributes with that plugin's prefix.
+
+## Combining Overlays
+
+Multiple overlays can be active simultaneously:
+
+- **Git Activity**: Colors nodes by churn
+- **Test Coverage**: Adds coverage badges
+- **Complexity**: Sizes nodes by complexity
+
+The frontend can toggle each visualization independently.
+
+## Single Source of Truth
+
+Overlay configuration lives in code, not in config files:
+
+<CardGroup cols={2}>
+  <Card title="Do" icon="check">
+    - Plugin defines overlays in C# code
+    - API exposes overlay definitions
+    - Frontend fetches and renders dynamically
+  </Card>
+  <Card title="Don't" icon="xmark">
+    - JSON config files for overlays
+    - Render config in database
+    - Hardcoded colors in frontend
+  </Card>
+</CardGroup>
+
+This ensures consistency and makes it easy to add new overlays.
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Custom Overlays" icon="palette" href="/how-to/custom-overlays">
+    Create your own overlay plugin
+  </Card>
+  <Card title="Plugin System" icon="plug" href="/concepts/plugin-system">
+    Deep dive into the plugin architecture
+  </Card>
+</CardGroup>

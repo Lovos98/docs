@@ -1,0 +1,282 @@
+---
+title: Layout API
+description: "Endpoints for GPU layout computation"
+---
+
+# Layout API
+
+Endpoints for controlling graph layout computation, including GPU-accelerated ForceAtlas2.
+
+## Start Layout Computation
+
+Trigger GPU layout computation for the current graph.
+
+<ParamField path="POST" type="/api/graph/layout/compute">
+  Starts an asynchronous layout computation.
+</ParamField>
+
+### Request Body
+
+```json
+{
+  "iterations": 1000,
+  "gravity": 1.0,
+  "scalingRatio": 2.0,
+  "strongGravityMode": false,
+  "edgeWeightInfluence": 1.0,
+  "barnesHutTheta": 1.2
+}
+```
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `iterations` | integer | 1000 | Number of layout iterations |
+| `gravity` | number | 1.0 | Pull toward center |
+| `scalingRatio` | number | 2.0 | Overall layout scale |
+| `strongGravityMode` | boolean | false | Prevent node drift |
+| `edgeWeightInfluence` | number | 1.0 | Edge weight importance |
+| `barnesHutTheta` | number | 1.2 | Approximation accuracy |
+
+### Response
+
+```json
+{
+  "status": "started",
+  "jobId": "layout-123456",
+  "backend": "gpu",
+  "estimatedTime": 5000
+}
+```
+
+### Example
+
+```bash
+curl -X POST http://localhost:5050/api/graph/layout/compute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "iterations": 1000,
+    "gravity": 1.5
+  }'
+```
+
+---
+
+## Get Computation Status
+
+Check the progress of a running layout computation.
+
+<ParamField path="GET" type="/api/graph/layout/compute/status">
+  Returns current computation status and progress.
+</ParamField>
+
+### Response (Running)
+
+```json
+{
+  "status": "running",
+  "progress": 45,
+  "iteration": 450,
+  "totalIterations": 1000,
+  "backend": "gpu",
+  "startedAt": "2024-01-15T10:30:00Z"
+}
+```
+
+### Response (Completed)
+
+```json
+{
+  "status": "completed",
+  "progress": 100,
+  "iteration": 1000,
+  "totalIterations": 1000,
+  "backend": "gpu",
+  "startedAt": "2024-01-15T10:30:00Z",
+  "completedAt": "2024-01-15T10:30:05Z",
+  "durationMs": 5234
+}
+```
+
+### Response (Idle)
+
+```json
+{
+  "status": "idle",
+  "progress": 0,
+  "lastRun": {
+    "completedAt": "2024-01-15T10:30:05Z",
+    "durationMs": 5234
+  }
+}
+```
+
+### Status Values
+
+| Status | Description |
+|--------|-------------|
+| `idle` | No computation running |
+| `starting` | Initializing computation |
+| `running` | Computation in progress |
+| `completed` | Computation finished successfully |
+| `failed` | Computation failed |
+| `cancelled` | Computation was cancelled |
+
+### Example
+
+```bash
+curl http://localhost:5050/api/graph/layout/compute/status
+```
+
+---
+
+## Cancel Computation
+
+Cancel a running layout computation.
+
+<ParamField path="POST" type="/api/graph/layout/compute/cancel">
+  Cancels the current layout computation if running.
+</ParamField>
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "Computation cancelled"
+}
+```
+
+### Example
+
+```bash
+curl -X POST http://localhost:5050/api/graph/layout/compute/cancel
+```
+
+---
+
+## Check GPU Availability
+
+Check if GPU layout computation is available.
+
+<ParamField path="GET" type="/api/graph/layout/compute/available">
+  Returns GPU availability and backend information.
+</ParamField>
+
+### Response (Available)
+
+```json
+{
+  "available": true,
+  "backend": "Metal",
+  "device": "Apple M1 Pro",
+  "serverUri": "ws://localhost:9002"
+}
+```
+
+### Response (Unavailable)
+
+```json
+{
+  "available": false,
+  "reason": "GraphPU server not running",
+  "fallback": "cpu"
+}
+```
+
+### Example
+
+```bash
+curl http://localhost:5050/api/graph/layout/compute/available
+```
+
+---
+
+## Layout Parameters Explained
+
+### iterations
+
+Number of ForceAtlas2 iterations. More iterations = more refined layout but longer computation.
+
+| Value | Use Case |
+|-------|----------|
+| 100-500 | Quick preview |
+| 500-1000 | Standard layout |
+| 1000-2000 | High quality |
+| 2000+ | Very large graphs |
+
+### gravity
+
+Controls how strongly nodes are pulled toward the center.
+
+| Value | Effect |
+|-------|--------|
+| 0.1-0.5 | Loose, spread out |
+| 1.0 | Balanced (default) |
+| 2.0-5.0 | Tight, compact |
+
+### scalingRatio
+
+Controls the overall scale of the layout.
+
+| Value | Effect |
+|-------|--------|
+| 0.5-1.0 | Compact |
+| 2.0 | Standard (default) |
+| 5.0-10.0 | Spread out |
+
+### strongGravityMode
+
+When `true`, uses a stronger gravity function that prevents nodes from drifting too far from center. Useful for disconnected graphs.
+
+### edgeWeightInfluence
+
+How much edge weights affect attraction force.
+
+| Value | Effect |
+|-------|--------|
+| 0 | Ignore edge weights |
+| 1.0 | Linear influence (default) |
+| 2.0+ | Emphasize weighted edges |
+
+### barnesHutTheta
+
+Controls the accuracy of the Barnes-Hut approximation. Lower = more accurate but slower.
+
+| Value | Effect |
+|-------|--------|
+| 0.5 | High accuracy, slower |
+| 1.2 | Balanced (default) |
+| 2.0+ | Faster, less accurate |
+
+---
+
+## Polling for Completion
+
+To wait for layout completion, poll the status endpoint:
+
+```javascript
+async function waitForLayout() {
+  while (true) {
+    const response = await fetch('/api/graph/layout/compute/status');
+    const status = await response.json();
+
+    if (status.status === 'completed') {
+      return status;
+    }
+
+    if (status.status === 'failed') {
+      throw new Error(status.error);
+    }
+
+    // Wait before polling again
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+}
+
+// Usage
+await fetch('/api/graph/layout/compute', { method: 'POST' });
+const result = await waitForLayout();
+console.log(`Layout completed in ${result.durationMs}ms`);
+```

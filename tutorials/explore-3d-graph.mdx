@@ -1,0 +1,301 @@
+---
+title: Explore the 3D Graph
+description: "Navigate and interact with your code visualization"
+---
+
+# Explore the 3D Graph
+
+Once you've analyzed a codebase, it's time to explore it visually. This tutorial covers all the navigation and interaction features.
+
+## Starting the Visualization
+
+Make sure both servers are running:
+
+```bash
+# Terminal 1: API Server
+npx @dotenvx/dotenvx run -- dotnet run --project src/adapters/driving/api
+
+# Terminal 2: Web Frontend
+cd src/adapters/driving/web && pnpm dev
+```
+
+Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+## Interface Overview
+
+The interface consists of four main areas:
+
+<Frame>
+  <img src="/images/tutorials/full-interface.png" alt="CodeGraph Interface Overview" />
+</Frame>
+
+| Area | Location | Purpose |
+|------|----------|---------|
+| **3D Graph** | Center | Interactive code visualization |
+| **Main Toolbar** | Top | View controls, layout, settings |
+| **Selection Toolbar** | Top (appears on selection) | Selection mode controls |
+| **Left Sidebar** | Left | Search, filters, layers |
+| **Right Sidebar** | Right | Node details, connections |
+
+## Main Toolbar
+
+The main toolbar provides global controls for the visualization.
+
+<Frame>
+  <img src="/images/tutorials/main-toolbar.png" alt="Main Toolbar" />
+</Frame>
+
+| Control | Description |
+|---------|-------------|
+| **Restart Layout** | Recalculate node positions from scratch |
+| **Undo/Redo** | Step through selection history |
+| **Zoom In/Out** | Adjust view zoom level |
+| **Labels** | Toggle class/member labels, adjust size |
+| **Brightness** | Adjust overall graph brightness |
+| **GPU Tweaks** | Fine-tune layout algorithm parameters |
+| **Sidebar Toggles** | Show/hide left and right panels |
+
+## Selection Toolbar
+
+When you select nodes, the selection toolbar appears with mode controls.
+
+<Frame>
+  <img src="/images/tutorials/selection-toolbar.png" alt="Selection Toolbar" />
+</Frame>
+
+### Selection Modes (Q W E R)
+
+Use the **Q, W, E, R** keys for quick access to selection modes—they're right next to each other for easy finger access:
+
+| Key | Mode | Icon | Description |
+|-----|------|------|-------------|
+| **Q** | New | Pointer | Click replaces current selection |
+| **W** | Add | Plus | Click adds to current selection |
+| **E** | Subtract | Minus | Click removes from selection |
+| **R** | Intersect | Merge | Keep only nodes in both selections |
+
+<Tip>
+The Q-W-E-R layout means you can switch modes without moving your hand—they're all under your left fingers on a QWERTY keyboard.
+</Tip>
+
+### Selection Depth
+
+Control how many hops from your selection to include:
+
+- **Depth 1**: Only directly connected nodes
+- **Depth 2**: Nodes within 2 hops
+- **Depth 3-5**: Wider neighborhood
+
+Use the **+** and **-** buttons to adjust depth.
+
+### Other Selection Controls
+
+| Control | Shortcut | Description |
+|---------|----------|-------------|
+| **Undo** | `Ctrl+Z` | Undo last selection change |
+| **Redo** | `Ctrl+Shift+Z` | Redo selection change |
+| **Clear** | `Esc` | Deselect all nodes |
+
+## Left Sidebar
+
+The left sidebar contains search and filtering tools.
+
+<Frame>
+  <img src="/images/tutorials/left-sidebar.png" alt="Left Sidebar" />
+</Frame>
+
+### Search
+
+Find nodes by name or filter by properties:
+
+```
+UserService          # Find by name
+type:Interface       # Filter by type
+namespace:MyApp.Core # Filter by namespace
+```
+
+Search results highlight matching nodes in the graph.
+
+### Filters
+
+Toggle visibility of node types:
+
+| Filter | Effect |
+|--------|--------|
+| **Namespaces** | Show/hide namespace containers |
+| **Classes** | Show/hide class nodes |
+| **Methods** | Show/hide method-level detail |
+| **Tests** | Show/hide test classes |
+
+### Layers Panel
+
+Switch between different views:
+
+- **Structure**: Default dependency view
+- **Inheritance**: Focus on class hierarchy
+- **Call Graph**: Method-level call relationships
+
+## Right Sidebar
+
+The right sidebar shows details about selected nodes.
+
+<Frame>
+  <img src="/images/tutorials/right-sidebar.png" alt="Right Sidebar" />
+</Frame>
+
+### Node Information
+
+When you click a node, the sidebar shows:
+
+| Field | Description |
+|-------|-------------|
+| **Name** | Class/interface/method name |
+| **Type** | Node type (Class, Interface, etc.) |
+| **File** | Source file path (clickable to open) |
+| **Namespace** | Containing namespace |
+| **Lines** | Line count |
+
+### Connections
+
+View incoming and outgoing relationships:
+
+- **Dependencies**: What this node depends on
+- **Dependents**: What depends on this node
+- **Inheritance**: Parent classes/interfaces
+- **Implementations**: Implementing classes
+
+Click any connection to navigate to that node.
+
+### Attributes
+
+View all attributes on the node, including overlay data:
+
+```
+coverage:percent = 85.5
+git:churn = 12
+complexity:cyclomatic = 8
+```
+
+## Navigation Controls
+
+### Mouse Controls
+
+| Action | Control |
+|--------|---------|
+| **Rotate** | Left click + drag |
+| **Pan** | Right click + drag |
+| **Zoom** | Scroll wheel |
+| **Select node** | Left click on node |
+| **Focus node** | Double-click on node |
+| **Deselect** | Click on empty space |
+
+### Keyboard Controls
+
+| Key | Action |
+|-----|--------|
+| `Q` | New selection mode |
+| `W` | Add to selection mode |
+| `E` | Subtract from selection mode |
+| `R` | Intersect selection mode |
+| `Escape` | Clear selection |
+| `Ctrl+Z` | Undo selection |
+| `Ctrl+Shift+Z` | Redo selection |
+
+### Touch Controls (Mobile/Tablet)
+
+| Gesture | Action |
+|---------|--------|
+| One finger drag | Rotate |
+| Two finger drag | Pan |
+| Pinch | Zoom |
+| Tap | Select node |
+| Double tap | Focus node |
+
+## Understanding the View
+
+### Node Types
+
+Nodes are colored by type:
+
+| Type | Color | Shape |
+|------|-------|-------|
+| Namespace | Blue | Large sphere |
+| Class | Green | Medium sphere |
+| Interface | Yellow | Medium sphere |
+| Struct | Orange | Medium sphere |
+| Enum | Purple | Small sphere |
+| Method | Gray | Small sphere |
+
+### Edge Types
+
+Edges represent relationships:
+
+| Type | Style |
+|------|-------|
+| `CONTAINS` | Thin gray line |
+| `DEPENDS_ON` | White line |
+| `INHERITS` | Thick blue line |
+| `IMPLEMENTS` | Dashed yellow line |
+| `CALLS` | Thin line (method-level only) |
+
+## Graph Layout
+
+### Automatic Layout
+
+The graph uses ForceAtlas2 layout algorithm. Nodes naturally cluster based on their connections—highly connected components group together.
+
+### Manual Positioning
+
+Drag nodes to new positions:
+1. Click and hold on a node
+2. Drag to desired position
+3. Release to drop
+
+<Tip>
+Your manual positions are saved. Use the "Restart Layout" button to recalculate from scratch.
+</Tip>
+
+### GPU-Accelerated Layout
+
+For large graphs (1000+ nodes), use GPU layout:
+
+1. Click the GPU Tweaks button in toolbar
+2. Adjust parameters if needed
+3. Click "Compute Layout"
+4. Wait for GPU computation (progress shown)
+
+GPU layout is significantly faster for large graphs.
+
+## Performance Tips
+
+<AccordionGroup>
+  <Accordion title="Graph is slow/laggy">
+    - Reduce visible nodes with filters
+    - Hide method-level nodes
+    - Use isolation mode (select + filter to neighborhood)
+    - Enable GPU layout for initial positioning
+  </Accordion>
+
+  <Accordion title="Too many edges">
+    - Filter by edge type
+    - Show only strong connections
+    - Use the layers panel to switch views
+  </Accordion>
+
+  <Accordion title="Can't find a node">
+    - Use search with exact name
+    - Check filters aren't hiding it
+    - Try `type:Class` or `type:Interface` filters
+  </Accordion>
+</AccordionGroup>
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Using Overlays" icon="layer-group" href="/tutorials/using-overlays">
+    Add git activity, coverage, and complexity data
+  </Card>
+  <Card title="Custom Overlays" icon="palette" href="/how-to/custom-overlays">
+    Build your own overlay plugin
+  </Card>
+</CardGroup>

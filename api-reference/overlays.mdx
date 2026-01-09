@@ -1,0 +1,323 @@
+---
+title: Overlays API
+description: "Endpoints for managing overlay plugins"
+---
+
+# Overlays API
+
+Endpoints for listing, applying, and removing overlay plugins.
+
+## List Overlays
+
+Get all available overlay plugins and their definitions.
+
+<ParamField path="GET" type="/api/overlays">
+  Returns all registered plugins and their overlay definitions.
+</ParamField>
+
+### Response
+
+```json
+{
+  "plugins": [
+    {
+      "id": "git-activity",
+      "name": "Git Activity",
+      "description": "Visualize code churn from git history",
+      "overlays": [
+        {
+          "id": "churn",
+          "name": "Change Frequency",
+          "type": "color",
+          "attribute": "git:churn",
+          "legend": {
+            "type": "gradient",
+            "stops": [
+              { "value": 0, "color": "#22c55e", "label": "Low" },
+              { "value": 100, "color": "#ef4444", "label": "High" }
+            ]
+          },
+          "defaultEnabled": false
+        },
+        {
+          "id": "authors",
+          "name": "Author Count",
+          "type": "size",
+          "attribute": "git:authors",
+          "legend": {
+            "type": "size",
+            "min": 5,
+            "max": 50
+          },
+          "defaultEnabled": false
+        }
+      ],
+      "status": "applied"
+    },
+    {
+      "id": "test-coverage",
+      "name": "Test Coverage",
+      "description": "Show code coverage from test runs",
+      "overlays": [
+        {
+          "id": "line-coverage",
+          "name": "Line Coverage",
+          "type": "color",
+          "attribute": "coverage:percent",
+          "legend": {
+            "type": "gradient",
+            "stops": [
+              { "value": 0, "color": "#ef4444", "label": "0%" },
+              { "value": 50, "color": "#f59e0b", "label": "50%" },
+              { "value": 100, "color": "#22c55e", "label": "100%" }
+            ]
+          }
+        }
+      ],
+      "status": "not_applied"
+    }
+  ]
+}
+```
+
+### Plugin Status
+
+| Status | Description |
+|--------|-------------|
+| `not_applied` | Plugin data not in graph |
+| `applying` | Currently processing |
+| `applied` | Data present in graph |
+| `removing` | Currently removing data |
+| `error` | Last operation failed |
+
+### Example
+
+```bash
+curl http://localhost:5050/api/overlays
+```
+
+---
+
+## Apply Overlay
+
+Apply a plugin's data to the graph.
+
+<ParamField path="POST" type="/api/overlays/{pluginId}/apply">
+  Runs the plugin's ApplyAsync method.
+</ParamField>
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `pluginId` | string | The plugin's unique identifier |
+
+### Request Body (Optional)
+
+Some plugins accept configuration:
+
+```json
+{
+  "since": "2024-01-01",
+  "until": "2024-06-30",
+  "branch": "main"
+}
+```
+
+### Response
+
+```json
+{
+  "success": true,
+  "plugin": "git-activity",
+  "nodesUpdated": 847,
+  "durationMs": 2341
+}
+```
+
+### Example
+
+```bash
+# Apply with defaults
+curl -X POST http://localhost:5050/api/overlays/git-activity/apply
+
+# Apply with options
+curl -X POST http://localhost:5050/api/overlays/git-activity/apply \
+  -H "Content-Type: application/json" \
+  -d '{"since": "2024-01-01"}'
+```
+
+---
+
+## Get Apply Status
+
+Check the status of an overlay application.
+
+<ParamField path="GET" type="/api/overlays/{pluginId}/status">
+  Returns the current status of the plugin.
+</ParamField>
+
+### Response (Applying)
+
+```json
+{
+  "plugin": "git-activity",
+  "status": "applying",
+  "progress": 45,
+  "message": "Processing UserService.cs"
+}
+```
+
+### Response (Applied)
+
+```json
+{
+  "plugin": "git-activity",
+  "status": "applied",
+  "appliedAt": "2024-01-15T10:30:00Z",
+  "nodesWithData": 847
+}
+```
+
+### Example
+
+```bash
+curl http://localhost:5050/api/overlays/git-activity/status
+```
+
+---
+
+## Remove Overlay
+
+Remove a plugin's data from the graph.
+
+<ParamField path="DELETE" type="/api/overlays/{pluginId}/apply">
+  Runs the plugin's RemoveAsync method.
+</ParamField>
+
+### Response
+
+```json
+{
+  "success": true,
+  "plugin": "git-activity",
+  "attributesRemoved": 2541
+}
+```
+
+### Example
+
+```bash
+curl -X DELETE http://localhost:5050/api/overlays/git-activity/apply
+```
+
+---
+
+## Overlay Types
+
+### Color Overlay
+
+Maps a numeric attribute to a color gradient.
+
+```json
+{
+  "type": "color",
+  "attribute": "git:churn",
+  "legend": {
+    "type": "gradient",
+    "stops": [
+      { "value": 0, "color": "#22c55e" },
+      { "value": 100, "color": "#ef4444" }
+    ]
+  }
+}
+```
+
+### Size Overlay
+
+Maps a numeric attribute to node size.
+
+```json
+{
+  "type": "size",
+  "attribute": "complexity:cyclomatic",
+  "legend": {
+    "type": "size",
+    "min": 5,
+    "max": 50,
+    "scale": "linear"
+  }
+}
+```
+
+### Badge Overlay
+
+Adds categorical badges to nodes.
+
+```json
+{
+  "type": "badge",
+  "attribute": "ownership:team",
+  "legend": {
+    "type": "category",
+    "categories": {
+      "Platform": "#3b82f6",
+      "Product": "#10b981",
+      "Infrastructure": "#f59e0b"
+    }
+  }
+}
+```
+
+---
+
+## Common Workflows
+
+### Apply Multiple Overlays
+
+```javascript
+async function applyOverlays(pluginIds) {
+  for (const pluginId of pluginIds) {
+    await fetch(`/api/overlays/${pluginId}/apply`, { method: 'POST' });
+
+    // Wait for completion
+    while (true) {
+      const response = await fetch(`/api/overlays/${pluginId}/status`);
+      const status = await response.json();
+
+      if (status.status === 'applied') break;
+      if (status.status === 'error') throw new Error(status.error);
+
+      await new Promise(r => setTimeout(r, 500));
+    }
+  }
+}
+
+await applyOverlays(['git-activity', 'test-coverage']);
+```
+
+### Refresh Overlay Data
+
+```javascript
+async function refreshOverlay(pluginId) {
+  // Remove old data
+  await fetch(`/api/overlays/${pluginId}/apply`, { method: 'DELETE' });
+
+  // Re-apply
+  await fetch(`/api/overlays/${pluginId}/apply`, { method: 'POST' });
+}
+```
+
+### Get Nodes with Overlay Data
+
+After applying an overlay, fetch the graph to get nodes with overlay attributes:
+
+```javascript
+const response = await fetch('/api/graph');
+const { nodes } = await response.json();
+
+// Nodes now include overlay attributes
+nodes.forEach(node => {
+  console.log(node.name, node['git:churn'], node['coverage:percent']);
+});
+```

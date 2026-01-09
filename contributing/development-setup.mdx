@@ -1,0 +1,298 @@
+---
+title: Development Setup
+description: "Set up your development environment for CodeGraph"
+---
+
+# Development Setup
+
+This guide walks through setting up a complete development environment for contributing to CodeGraph.
+
+## Prerequisites
+
+### Required
+
+| Tool | Version | Purpose |
+|------|---------|---------|
+| .NET SDK | 8.0+ | Core application |
+| Node.js | 18+ | Web frontend |
+| pnpm | Latest | Package management |
+| Neo4j | 5.x | Graph database |
+| Git | Latest | Version control |
+
+### Optional (for GPU development)
+
+| Tool | Version | Purpose |
+|------|---------|---------|
+| Rust | 1.70+ | GPU layout server |
+| Metal SDK | Latest | macOS GPU |
+| Vulkan SDK | Latest | Linux/Windows GPU |
+
+## Step 1: Clone the Repository
+
+```bash
+# Clone
+git clone https://github.com/rofox/codegraph.git
+cd codegraph
+
+# Create a branch for your work
+git checkout -b feature/my-feature
+```
+
+## Step 2: Set Up Neo4j
+
+<Tabs>
+  <Tab title="Docker (Recommended)">
+    ```bash
+    docker run \
+      --name codegraph-neo4j \
+      -p 7474:7474 -p 7687:7687 \
+      -e NEO4J_AUTH=neo4j/devpassword \
+      -v codegraph-neo4j-data:/data \
+      -d neo4j:5
+    ```
+  </Tab>
+  <Tab title="Neo4j Desktop">
+    1. Download [Neo4j Desktop](https://neo4j.com/download/)
+    2. Create a new project
+    3. Create a new database
+    4. Start the database
+    5. Set password to `devpassword` (or update `.env`)
+  </Tab>
+</Tabs>
+
+## Step 3: Configure Environment
+
+```bash
+# Copy example environment
+cp .env.example .env
+
+# Edit .env
+Neo4j__Uri=bolt://localhost:7687
+Neo4j__Username=neo4j
+Neo4j__Password=devpassword
+Neo4j__Database=neo4j
+```
+
+## Step 4: Build and Test
+
+```bash
+# Restore dependencies
+dotnet restore
+
+# Build all projects
+dotnet build
+
+# Run tests
+dotnet test
+
+# Run tests with coverage
+dotnet test --collect:"XPlat Code Coverage"
+```
+
+## Step 5: Set Up Frontend
+
+```bash
+cd src/adapters/driving/web
+
+# Install dependencies
+pnpm install
+
+# Run development server
+pnpm dev
+
+# Run frontend tests
+pnpm test
+```
+
+## Step 6: Set Up GPU Server (Optional)
+
+```bash
+cd lib/graphpu
+
+# Build
+cargo build --features server --release
+
+# Test
+cargo test
+
+# Run
+./target/release/graphpu-server
+```
+
+## Running the Full Stack
+
+### Option A: start.sh Script
+
+```bash
+./start.sh
+```
+
+This starts:
+- Neo4j (if not running)
+- GraphPU server
+- API server
+- Web frontend
+
+### Option B: Manual Start
+
+Terminal 1 - API:
+```bash
+npx @dotenvx/dotenvx run -- dotnet run --project src/adapters/driving/api
+```
+
+Terminal 2 - Frontend:
+```bash
+cd src/adapters/driving/web && pnpm dev
+```
+
+Terminal 3 - GPU (optional):
+```bash
+./lib/graphpu/target/release/graphpu-server
+```
+
+## Project Structure
+
+```
+codegraph/
+├── src/
+│   ├── core/                    # Domain logic (work here for core changes)
+│   │   ├── Domain/              # Entities
+│   │   └── Ports/               # Interfaces
+│   └── adapters/
+│       ├── driven/              # Outbound adapters
+│       │   ├── neo4j/           # Neo4j implementation
+│       │   ├── roslyn/          # C# analysis
+│       │   └── rustgpu/         # GPU adapter
+│       └── driving/             # Inbound adapters
+│           ├── api/             # REST API
+│           ├── cli/             # CLI
+│           └── web/             # React frontend
+├── plugins/                     # Plugin implementations
+├── lib/
+│   └── graphpu/                 # Rust GPU server
+├── tests/                       # Test projects
+└── docs/                        # Documentation source
+```
+
+## IDE Setup
+
+### Visual Studio Code
+
+Recommended extensions:
+- C# Dev Kit
+- ESLint
+- Prettier
+- rust-analyzer (for GPU development)
+
+```json
+// .vscode/settings.json
+{
+  "editor.formatOnSave": true,
+  "dotnet.defaultSolution": "CodeGraph.sln"
+}
+```
+
+### JetBrains Rider
+
+1. Open `CodeGraph.sln`
+2. Enable "Restore NuGet packages on build"
+3. Configure Neo4j connection in run configuration
+
+### Visual Studio
+
+1. Open `CodeGraph.sln`
+2. Set `src/adapters/driving/api` as startup project
+3. Configure environment variables in launchSettings.json
+
+## Debugging
+
+### API Server
+
+```bash
+# With debugging enabled
+dotnet run --project src/adapters/driving/api --configuration Debug
+```
+
+Attach debugger to the running process, or use IDE debugging.
+
+### Frontend
+
+```bash
+cd src/adapters/driving/web
+pnpm dev
+```
+
+Open browser DevTools for debugging.
+
+### Tests
+
+```bash
+# Run specific test
+dotnet test --filter "FullyQualifiedName~MyTestClass.MyTestMethod"
+
+# Run with debugger
+dotnet test --no-build --logger "console;verbosity=detailed"
+```
+
+## Common Tasks
+
+### Adding a New Overlay Plugin
+
+1. Create project in `plugins/`
+2. Implement `IOverlayPlugin`
+3. Register in `Program.cs`
+4. Add tests
+
+### Adding an API Endpoint
+
+1. Add method to appropriate controller in `src/adapters/driving/api/Controllers/`
+2. Add corresponding port method if needed
+3. Add tests
+4. Update API documentation
+
+### Modifying the Frontend
+
+1. Edit files in `src/adapters/driving/web/src/`
+2. Hot reload will update automatically
+3. Add tests in `__tests__/`
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Build fails with package errors">
+    ```bash
+    dotnet restore --force
+    dotnet build --no-incremental
+    ```
+  </Accordion>
+
+  <Accordion title="Neo4j connection refused">
+    - Check Neo4j is running: `docker ps` or Neo4j Desktop
+    - Verify credentials in `.env`
+    - Check port 7687 is not blocked
+  </Accordion>
+
+  <Accordion title="Frontend won't start">
+    ```bash
+    cd src/adapters/driving/web
+    rm -rf node_modules
+    pnpm install
+    pnpm dev
+    ```
+  </Accordion>
+
+  <Accordion title="GPU server won't build">
+    - Ensure Rust is installed: `rustc --version`
+    - macOS: Xcode command line tools installed
+    - Linux: Vulkan SDK installed
+  </Accordion>
+</AccordionGroup>
+
+## Getting Help
+
+- Check existing issues on GitHub
+- Ask in GitHub Discussions
+- Review the architecture docs
+- Read the codebase - it's well documented!
+
+Happy coding!

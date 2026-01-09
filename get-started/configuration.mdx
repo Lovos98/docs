@@ -1,0 +1,150 @@
+---
+title: Configuration
+description: "Configure CodeGraph for your environment"
+---
+
+# Configuration
+
+CodeGraph is configured through environment variables. This guide covers all available options.
+
+## Environment Variables
+
+### Neo4j Connection
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `Neo4j__Uri` | Neo4j connection URI | `bolt://localhost:7687` |
+| `Neo4j__Username` | Neo4j username | `neo4j` |
+| `Neo4j__Password` | Neo4j password | (required) |
+| `Neo4j__Database` | Neo4j database name | `neo4j` |
+
+<Note>
+Alternative format also supported: `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`, `NEO4J_DATABASE`
+</Note>
+
+### API Server
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `API_PORT` | Port for the API server | `5050` |
+| `API_HOST` | Host to bind to | `localhost` |
+| `CORS_ORIGINS` | Allowed CORS origins | `http://localhost:5173` |
+
+### GPU Layout (GraphPU)
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `GRAPHPU_URI` | WebSocket URI for GPU server | `ws://localhost:9002` |
+| `GRAPHPU_TIMEOUT` | Layout computation timeout (ms) | `30000` |
+
+## Configuration File
+
+Create a `.env` file in the project root:
+
+```bash
+# Neo4j
+Neo4j__Uri=bolt://localhost:7687
+Neo4j__Username=neo4j
+Neo4j__Password=your-secure-password
+Neo4j__Database=neo4j
+
+# API
+API_PORT=5050
+CORS_ORIGINS=http://localhost:5173,http://localhost:3000
+
+# GPU Layout
+GRAPHPU_URI=ws://localhost:9002
+```
+
+## Encrypted Secrets
+
+For production, encrypt your `.env` file:
+
+```bash
+# Encrypt
+npx @dotenvx/dotenvx encrypt
+
+# This creates .env.keys (keep this safe!)
+# Your .env now contains encrypted values
+
+# Run with decryption
+npx @dotenvx/dotenvx run -- dotnet run --project src/adapters/driving/api
+```
+
+<Warning>
+Never commit `.env.keys` to version control. Add it to your `.gitignore`.
+</Warning>
+
+## Neo4j Configuration
+
+### Database Setup
+
+CodeGraph works with Neo4j Community Edition (free) or Enterprise. Recommended settings:
+
+```properties
+# neo4j.conf
+dbms.memory.heap.initial_size=512m
+dbms.memory.heap.max_size=1G
+dbms.memory.pagecache.size=512m
+```
+
+### Multiple Databases
+
+You can analyze different codebases into separate Neo4j databases:
+
+```bash
+# Analyze Project A
+Neo4j__Database=project_a codegraph analyze ./ProjectA.sln
+
+# Analyze Project B
+Neo4j__Database=project_b codegraph analyze ./ProjectB.sln
+```
+
+<Info>
+Multiple databases require Neo4j Enterprise Edition or Neo4j 5.x Community with multi-database enabled.
+</Info>
+
+## Frontend Configuration
+
+The web frontend reads configuration from environment variables at build time:
+
+```bash
+# In src/adapters/driving/web/.env
+VITE_API_URL=http://localhost:5050
+```
+
+For production builds:
+
+```bash
+VITE_API_URL=https://api.yourdomain.com pnpm build
+```
+
+## Layout Options
+
+Configure the default layout algorithm settings:
+
+```json
+{
+  "layout": {
+    "algorithm": "forceAtlas2",
+    "iterations": 1000,
+    "gravity": 1.0,
+    "scalingRatio": 2.0,
+    "strongGravityMode": false,
+    "outboundAttractionDistribution": true
+  }
+}
+```
+
+These can be overridden per-request via the API.
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="CLI Commands" icon="terminal" href="/how-to/cli-commands">
+    All available CLI commands and options
+  </Card>
+  <Card title="API Usage" icon="code" href="/how-to/api-usage">
+    Integrate CodeGraph via REST API
+  </Card>
+</CardGroup>

@@ -1,0 +1,166 @@
+---
+title: Contributing
+description: "How to contribute to CodeGraph"
+---
+
+# Contributing to CodeGraph
+
+Thank you for your interest in contributing to CodeGraph! This guide will help you get started.
+
+## Ways to Contribute
+
+<CardGroup cols={2}>
+  <Card title="Report Bugs" icon="bug">
+    Found a bug? Open an issue on GitHub with steps to reproduce.
+  </Card>
+  <Card title="Suggest Features" icon="lightbulb">
+    Have an idea? Open a feature request issue to discuss.
+  </Card>
+  <Card title="Improve Docs" icon="book">
+    Documentation improvements are always welcome.
+  </Card>
+  <Card title="Submit Code" icon="code">
+    Fix bugs or implement features via pull requests.
+  </Card>
+</CardGroup>
+
+## Code of Conduct
+
+We are committed to providing a welcoming and inclusive experience. Please:
+
+- Be respectful and considerate
+- Welcome newcomers and help them learn
+- Focus on constructive feedback
+- Assume good intentions
+
+## Getting Started
+
+1. **Fork the repository** on GitHub
+2. **Clone your fork** locally
+3. **Set up the development environment** (see [Development Setup](/contributing/development-setup))
+4. **Create a branch** for your changes
+5. **Make your changes** with tests
+6. **Submit a pull request**
+
+## Pull Request Process
+
+### Before Submitting
+
+- [ ] Code follows the existing style
+- [ ] Tests pass locally (`dotnet test`)
+- [ ] New features include tests
+- [ ] Documentation updated if needed
+- [ ] Commit messages are clear
+
+### PR Guidelines
+
+1. **Keep PRs focused** - One feature or fix per PR
+2. **Write clear descriptions** - Explain what and why
+3. **Reference issues** - Link related issues
+4. **Be patient** - Reviews may take time
+
+### Commit Messages
+
+Follow conventional commits:
+
+```
+feat: add git activity overlay
+fix: resolve layout crash on empty graphs
+docs: improve GPU setup instructions
+test: add coverage for overlay removal
+refactor: simplify graph storage interface
+```
+
+## Development Guidelines
+
+### Architecture
+
+CodeGraph follows hexagonal architecture. Before contributing:
+
+1. Read the [Architecture documentation](/concepts/architecture)
+2. Understand the separation of core and adapters
+3. Keep domain logic in `core/`, external interactions in `adapters/`
+
+### Code Style
+
+- Follow existing code style
+- Use meaningful names
+- Add XML documentation for public APIs
+- Keep methods focused and small
+
+### Testing
+
+- Write tests for new features
+- Maintain or improve coverage
+- Test edge cases
+- Use mocks for external dependencies
+
+```csharp
+[Test]
+public async Task NewFeature_ShouldDoExpectedThing()
+{
+    // Arrange
+    var mockStorage = new Mock<IGraphStorage>();
+
+    // Act
+    var result = await subject.DoThing();
+
+    // Assert
+    Assert.That(result, Is.EqualTo(expected));
+}
+```
+
+## Areas Needing Help
+
+<AccordionGroup>
+  <Accordion title="New Language Support">
+    CodeGraph currently supports C#. Help wanted for:
+    - TypeScript/JavaScript (using TypeScript compiler API)
+    - Python (using AST module)
+    - Java (using JavaParser)
+    - Go (using go/ast)
+  </Accordion>
+
+  <Accordion title="New Overlay Plugins">
+    Built-in overlays needed:
+    - SonarQube integration
+    - Azure DevOps integration
+    - GitHub Actions integration
+    - Custom metrics plugins
+  </Accordion>
+
+  <Accordion title="Performance Optimization">
+    Areas for optimization:
+    - Large graph rendering
+    - Neo4j query performance
+    - Analysis speed
+    - Memory usage
+  </Accordion>
+
+  <Accordion title="Documentation">
+    Documentation needs:
+    - More tutorials
+    - Video guides
+    - Translation to other languages
+    - API examples
+  </Accordion>
+</AccordionGroup>
+
+## License
+
+CodeGraph is licensed under GPL v3. By contributing, you agree that your contributions will be licensed under the same license.
+
+### Why GPL v3?
+
+- Ensures improvements stay open source
+- Protects against closed-source forks
+- Allows commercial use (internally)
+- We (copyright holders) can still offer proprietary licenses
+
+## Questions?
+
+- **GitHub Issues** - For bugs and features
+- **GitHub Discussions** - For questions and ideas
+- **Discord** - For real-time chat (coming soon)
+
+We appreciate all contributions, big or small. Thank you for helping make CodeGraph better!

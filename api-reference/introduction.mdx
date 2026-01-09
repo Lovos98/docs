@@ -1,0 +1,146 @@
+---
+title: API Reference
+description: "Complete REST API reference for CodeGraph"
+---
+
+# API Reference
+
+CodeGraph exposes a REST API for all operations. The API server runs on `http://localhost:5050` by default.
+
+## Base URL
+
+```
+http://localhost:5050/api
+```
+
+For production deployments, replace with your API server URL.
+
+## Authentication
+
+Currently, CodeGraph runs locally without authentication. For production deployments, configure authentication in the API server settings.
+
+## Response Format
+
+All responses are JSON:
+
+```json
+{
+  "data": { ... },
+  "meta": {
+    "timestamp": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+### Error Responses
+
+```json
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Node with ID 'xyz' not found"
+  }
+}
+```
+
+| Status Code | Meaning |
+|-------------|---------|
+| 200 | Success |
+| 400 | Bad request (invalid parameters) |
+| 404 | Resource not found |
+| 500 | Server error |
+
+## Endpoints Overview
+
+### Graph Data
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/graph` | Get all nodes and edges |
+| GET | `/api/graph/nodes/{id}` | Get single node |
+| POST | `/api/graph/layout` | Save layout positions |
+| DELETE | `/api/graph/layout` | Clear layout positions |
+
+### Layout Compute
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/graph/layout/compute` | Start GPU layout |
+| GET | `/api/graph/layout/compute/status` | Get computation progress |
+| POST | `/api/graph/layout/compute/cancel` | Cancel computation |
+| GET | `/api/graph/layout/compute/available` | Check GPU availability |
+
+### Overlays
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/overlays` | List available plugins |
+| POST | `/api/overlays/{id}/apply` | Apply overlay data |
+| DELETE | `/api/overlays/{id}/apply` | Remove overlay data |
+
+## Quick Examples
+
+### Get the entire graph
+
+```bash
+curl http://localhost:5050/api/graph
+```
+
+### Trigger GPU layout
+
+```bash
+curl -X POST http://localhost:5050/api/graph/layout/compute \
+  -H "Content-Type: application/json" \
+  -d '{"iterations": 1000}'
+```
+
+### Apply git overlay
+
+```bash
+curl -X POST http://localhost:5050/api/overlays/git-activity/apply
+```
+
+## SDK / Client Libraries
+
+Currently, CodeGraph provides a REST API. Client libraries for popular languages are planned.
+
+For now, you can use any HTTP client:
+
+<CodeGroup>
+
+```javascript JavaScript (fetch)
+const response = await fetch('http://localhost:5050/api/graph');
+const graph = await response.json();
+```
+
+```python Python (requests)
+import requests
+response = requests.get('http://localhost:5050/api/graph')
+graph = response.json()
+```
+
+```csharp C# (HttpClient)
+using var client = new HttpClient();
+var response = await client.GetAsync("http://localhost:5050/api/graph");
+var graph = await response.Content.ReadFromJsonAsync<GraphResponse>();
+```
+
+</CodeGroup>
+
+## Rate Limiting
+
+No rate limiting is applied by default. For production deployments, consider adding rate limiting at the API gateway level.
+
+## What's Next?
+
+<CardGroup cols={3}>
+  <Card title="Graph API" icon="diagram-project" href="/api-reference/graph">
+    Graph data endpoints
+  </Card>
+  <Card title="Layout API" icon="grid" href="/api-reference/layout">
+    Layout computation endpoints
+  </Card>
+  <Card title="Overlays API" icon="layer-group" href="/api-reference/overlays">
+    Overlay management endpoints
+  </Card>
+</CardGroup>

@@ -1,0 +1,198 @@
+---
+title: Analyze Your First Codebase
+description: "Step-by-step guide to analyzing a .NET solution"
+---
+
+# Analyze Your First Codebase
+
+This tutorial walks you through analyzing a real .NET codebase and understanding what CodeGraph extracts.
+
+## What Gets Extracted?
+
+CodeGraph uses Roslyn to analyze your C# code and extract:
+
+| Entity | Description | Graph Node Type |
+|--------|-------------|-----------------|
+| Namespaces | Logical groupings | `Namespace` |
+| Classes | Class definitions | `Class` |
+| Interfaces | Interface definitions | `Interface` |
+| Structs | Struct definitions | `Struct` |
+| Enums | Enum definitions | `Enum` |
+| Methods | Method definitions | `Method` |
+
+| Relationship | Description | Graph Edge Type |
+|--------------|-------------|-----------------|
+| Contains | Namespace contains class | `CONTAINS` |
+| Depends On | Class uses another class | `DEPENDS_ON` |
+| Implements | Class implements interface | `IMPLEMENTS` |
+| Inherits | Class inherits from class | `INHERITS` |
+| Calls | Method calls another method | `CALLS` |
+
+## Step 1: Choose a Codebase
+
+For this tutorial, we'll use a sample project. You can substitute your own `.sln` file.
+
+```bash
+# Clone a sample project
+git clone https://github.com/dotnet/samples.git
+cd samples/core/console-apps
+```
+
+Or use any .NET solution you have locally.
+
+## Step 2: Run the Analysis
+
+```bash
+npx @dotenvx/dotenvx run -- sh -c 'dotnet run --project src/adapters/driving/cli -- analyze /path/to/YourSolution.sln'
+```
+
+### Understanding the Output
+
+```
+Analyzing /path/to/YourSolution.sln...
+
+[1/4] Loading solution...
+  Found 5 projects:
+  - MyApp.Core
+  - MyApp.Infrastructure
+  - MyApp.Web
+  - MyApp.Tests
+  - MyApp.IntegrationTests
+
+[2/4] Extracting nodes...
+  Namespaces: 23
+  Classes: 156
+  Interfaces: 34
+  Methods: 892
+  Total: 1,105
+
+[3/4] Extracting edges...
+  Dependencies: 2,341
+  Inheritance: 45
+  Implementations: 67
+  Total: 2,453
+
+[4/4] Saving to Neo4j...
+  Clearing existing data...
+  Writing nodes... done
+  Writing edges... done
+
+Analysis complete!
+  Duration: 6.3s
+  Nodes: 1,105
+  Edges: 2,453
+```
+
+## Step 3: Verify in Neo4j
+
+Open Neo4j Browser at `http://localhost:7474` and run:
+
+```cypher
+// Count all nodes
+MATCH (n:CodeNode) RETURN count(n) as nodes
+
+// See node types
+MATCH (n:CodeNode) RETURN n.type, count(*) ORDER BY count(*) DESC
+
+// View a sample class
+MATCH (n:CodeNode {type: 'Class'}) RETURN n LIMIT 5
+```
+
+## Step 4: Explore Node Attributes
+
+Each node has attributes that you can query:
+
+```cypher
+MATCH (n:CodeNode {name: 'UserService'})
+RETURN n.name, n.type, n.filePath, n.namespace
+```
+
+| Attribute | Description |
+|-----------|-------------|
+| `name` | Entity name |
+| `type` | Node type (Class, Interface, etc.) |
+| `fullName` | Fully qualified name |
+| `filePath` | Source file path |
+| `namespace` | Containing namespace |
+| `visibility` | Public, Private, Internal |
+| `isAbstract` | Whether class is abstract |
+| `isStatic` | Whether class is static |
+
+## Analysis Options
+
+### Verbose Mode
+
+See detailed progress:
+
+```bash
+codegraph analyze ./Solution.sln --verbose
+```
+
+### Filter by Project
+
+Analyze only specific projects:
+
+```bash
+codegraph analyze ./Solution.sln --include "*.Core" --include "*.Domain"
+```
+
+### Exclude Test Projects
+
+```bash
+codegraph analyze ./Solution.sln --exclude "*Tests*"
+```
+
+### Method-Level Analysis
+
+By default, CodeGraph analyzes at class level. For method-level:
+
+```bash
+codegraph analyze ./Solution.sln --depth methods
+```
+
+<Warning>
+Method-level analysis can produce very large graphs. Start with class-level for large codebases.
+</Warning>
+
+## Incremental Analysis
+
+For large codebases, you can analyze incrementally:
+
+```bash
+# First full analysis
+codegraph analyze ./Solution.sln
+
+# Later, only changed files
+codegraph analyze ./Solution.sln --incremental
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Analysis fails with 'Could not load project'">
+    Make sure you can build the solution normally:
+    ```bash
+    dotnet restore ./Solution.sln
+    dotnet build ./Solution.sln
+    ```
+  </Accordion>
+
+  <Accordion title="Very slow analysis">
+    - Exclude test projects with `--exclude "*Tests*"`
+    - Use class-level analysis instead of method-level
+    - Check Neo4j memory settings
+  </Accordion>
+
+  <Accordion title="Missing dependencies">
+    Some dependencies might not be detected if they're:
+    - Dynamic (reflection-based)
+    - In third-party assemblies
+    - Loaded at runtime
+  </Accordion>
+</AccordionGroup>
+
+## What's Next?
+
+<Card title="Explore the 3D Graph" icon="cube" href="/tutorials/explore-3d-graph">
+  Navigate and interact with your visualization
+</Card>

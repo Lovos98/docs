@@ -1,0 +1,289 @@
+---
+title: API Usage
+description: "Integrate CodeGraph into your workflows via REST API"
+---
+
+# API Usage
+
+This guide shows how to integrate CodeGraph into your applications and workflows using the REST API.
+
+## Basic Integration
+
+### Fetch and Display Graph
+
+```javascript
+async function loadGraph() {
+  const response = await fetch('http://localhost:5050/api/graph');
+  const { nodes, edges } = await response.json();
+
+  console.log(`Loaded ${nodes.length} nodes, ${edges.length} edges`);
+
+  // Process nodes
+  nodes.forEach(node => {
+    console.log(`${node.type}: ${node.name}`);
+  });
+
+  return { nodes, edges };
+}
+```
+
+### Trigger Layout and Wait
+
+```javascript
+async function computeLayout(options = {}) {
+  // Start computation
+  await fetch('http://localhost:5050/api/graph/layout/compute', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      iterations: options.iterations || 1000,
+      gravity: options.gravity || 1.0
+    })
+  });
+
+  // Poll for completion
+  while (true) {
+    const response = await fetch('/api/graph/layout/compute/status');
+    const status = await response.json();
+
+    if (status.status === 'completed') {
+      console.log(`Layout completed in ${status.durationMs}ms`);
+      return;
+    }
+
+    if (status.status === 'failed') {
+      throw new Error(status.error);
+    }
+
+    // Report progress
+    if (options.onProgress) {
+      options.onProgress(status.progress);
+    }
+
+    await new Promise(r => setTimeout(r, 500));
+  }
+}
+```
+
+## CI/CD Integration
+
+### Architecture Check in CI
+
+Check for architectural violations in your CI pipeline:
+
+```yaml
+# .github/workflows/architecture.yml
+name: Architecture Check
+
+on: [push, pull_request]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      neo4j:
+        image: neo4j:5
+        env:
+          NEO4J_AUTH: neo4j/testpassword
+        ports:
+          - 7687:7687
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Analyze codebase
+        run: |
+          dotnet run --project tools/codegraph -- analyze ./MySolution.sln
+        env:
+          Neo4j__Password: testpassword
+
+      - name: Check for circular dependencies
+        run: |
+          CYCLES=$(curl -s http://localhost:5050/api/query \
+            -d '{"query": "MATCH path = (n)-[:DEPENDS_ON*2..5]->(n) RETURN count(path)"}' \
+            | jq '.data[0]')
+
+          if [ "$CYCLES" -gt 0 ]; then
+            echo "Found $CYCLES circular dependencies!"
+            exit 1
+          fi
+```
+
+### Generate Architecture Report
+
+```bash
+#!/bin/bash
+# scripts/architecture-report.sh
+
+# Analyze
+codegraph analyze ./MySolution.sln
+
+# Generate metrics
+echo "# Architecture Report" > report.md
+echo "" >> report.md
+echo "## Statistics" >> report.md
+
+# Node counts by type
+curl -s http://localhost:5050/api/graph | \
+  jq -r '.nodes | group_by(.type) | map({type: .[0].type, count: length}) | .[] | "- \(.type): \(.count)"' >> report.md
+
+# Top dependencies
+echo "" >> report.md
+echo "## Most Connected Classes" >> report.md
+curl -s http://localhost:5050/api/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "MATCH (n:CodeNode {type: \"Class\"})-[:DEPENDS_ON]->(m) RETURN n.name, count(m) as deps ORDER BY deps DESC LIMIT 10"}' | \
+  jq -r '.data[] | "- \(.[0]): \(.[1]) dependencies"' >> report.md
+
+echo "Report generated: report.md"
+```
+
+## Custom Visualizations
+
+### Three.js Integration
+
+```javascript
+import * as THREE from 'three';
+
+async function createVisualization(container) {
+  // Fetch graph
+  const response = await fetch('http://localhost:5050/api/graph');
+  const { nodes, edges } = await response.json();
+
+  // Setup Three.js
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  const renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  container.appendChild(renderer.domElement);
+
+  // Create node meshes
+  const nodeObjects = {};
+  const geometry = new THREE.SphereGeometry(0.5, 16, 16);
+
+  nodes.forEach(node => {
+    const color = getColorForType(node.type);
+    const material = new THREE.MeshBasicMaterial({ color });
+    const sphere = new THREE.Mesh(geometry, material);
+
+    sphere.position.set(
+      node['layout:x'] || Math.random() * 100 - 50,
+      node['layout:y'] || Math.random() * 100 - 50,
+      node['layout:z'] || 0
+    );
+
+    sphere.userData = node;
+    nodeObjects[node.id] = sphere;
+    scene.add(sphere);
+  });
+
+  // Create edge lines
+  edges.forEach(edge => {
+    const source = nodeObjects[edge.source];
+    const target = nodeObjects[edge.target];
+    if (!source || !target) return;
+
+    const points = [source.position, target.position];
+    const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+    const lineMaterial = new THREE.LineBasicMaterial({ color: 0x444444 });
+    const line = new THREE.Line(lineGeometry, lineMaterial);
+    scene.add(line);
+  });
+
+  // Animate
+  camera.position.z = 100;
+  function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+  }
+  animate();
+}
+
+function getColorForType(type) {
+  const colors = {
+    'Namespace': 0x3b82f6,
+    'Class': 0x22c55e,
+    'Interface': 0xeab308,
+    'Struct': 0xf97316,
+    'Enum': 0xa855f7,
+    'Method': 0x6b7280
+  };
+  return colors[type] || 0xffffff;
+}
+```
+
+## Webhooks (Future)
+
+CodeGraph will support webhooks for real-time updates:
+
+```javascript
+// Future API
+POST /api/webhooks
+{
+  "url": "https://myapp.com/webhook",
+  "events": ["analysis.complete", "layout.complete", "overlay.applied"]
+}
+```
+
+## Error Handling
+
+```javascript
+async function safeApiCall(url, options = {}) {
+  try {
+    const response = await fetch(url, options);
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || `HTTP ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error.name === 'TypeError') {
+      throw new Error('API server unreachable. Is CodeGraph running?');
+    }
+    throw error;
+  }
+}
+
+// Usage
+try {
+  const graph = await safeApiCall('http://localhost:5050/api/graph');
+} catch (error) {
+  console.error('Failed to load graph:', error.message);
+}
+```
+
+## Rate Limiting Best Practices
+
+For heavy API usage:
+
+```javascript
+class RateLimitedClient {
+  constructor(baseUrl, requestsPerSecond = 10) {
+    this.baseUrl = baseUrl;
+    this.minInterval = 1000 / requestsPerSecond;
+    this.lastRequest = 0;
+  }
+
+  async fetch(path, options = {}) {
+    const now = Date.now();
+    const elapsed = now - this.lastRequest;
+
+    if (elapsed < this.minInterval) {
+      await new Promise(r => setTimeout(r, this.minInterval - elapsed));
+    }
+
+    this.lastRequest = Date.now();
+    return fetch(`${this.baseUrl}${path}`, options);
+  }
+}
+
+const client = new RateLimitedClient('http://localhost:5050/api');
+const graph = await client.fetch('/graph').then(r => r.json());
+```

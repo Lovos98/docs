@@ -1,0 +1,142 @@
+---
+title: Installation
+description: "Install CodeGraph and its dependencies"
+---
+
+# Installation
+
+CodeGraph requires a few dependencies to run. This guide walks you through setting everything up.
+
+## Prerequisites
+
+<CardGroup cols={2}>
+  <Card title=".NET 8 SDK" icon="microsoft" href="https://dotnet.microsoft.com/download/dotnet/8.0">
+    Required for the analysis engine and API server
+  </Card>
+  <Card title="Neo4j" icon="database" href="https://neo4j.com/download/">
+    Graph database for storing code structure
+  </Card>
+  <Card title="Node.js 18+" icon="node-js" href="https://nodejs.org/">
+    Required for the web frontend
+  </Card>
+  <Card title="pnpm" icon="npm" href="https://pnpm.io/">
+    Package manager for the frontend
+  </Card>
+</CardGroup>
+
+### Optional (for GPU acceleration)
+
+- **Rust 1.70+** - For building the GPU layout engine
+- **Metal** (macOS) or **Vulkan** (Linux/Windows) - GPU compute support
+
+## Step 1: Install Neo4j
+
+<Tabs>
+  <Tab title="Neo4j Desktop (Recommended)">
+    1. Download [Neo4j Desktop](https://neo4j.com/download/)
+    2. Create a new project and database
+    3. Start the database
+    4. Note your password (default user is `neo4j`)
+  </Tab>
+  <Tab title="Docker">
+    ```bash
+    docker run \
+      --name neo4j \
+      -p 7474:7474 -p 7687:7687 \
+      -e NEO4J_AUTH=neo4j/your-password \
+      -d neo4j:5
+    ```
+  </Tab>
+  <Tab title="Homebrew (macOS)">
+    ```bash
+    brew install neo4j
+    neo4j start
+
+    # Set password at http://localhost:7474
+    # Default: neo4j/neo4j (will prompt to change)
+    ```
+  </Tab>
+</Tabs>
+
+## Step 2: Clone CodeGraph
+
+```bash
+git clone https://github.com/rofox/codegraph.git
+cd codegraph
+```
+
+## Step 3: Configure Environment
+
+```bash
+# Copy the example environment file
+cp .env.example .env
+```
+
+Edit `.env` and set your Neo4j credentials:
+
+```bash
+Neo4j__Uri=bolt://localhost:7687
+Neo4j__Username=neo4j
+Neo4j__Password=your-password
+Neo4j__Database=neo4j
+```
+
+<Tip>
+For production, encrypt your `.env` file:
+```bash
+npx @dotenvx/dotenvx encrypt
+```
+</Tip>
+
+## Step 4: Install Dependencies
+
+```bash
+# .NET dependencies (automatic on build)
+dotnet restore
+
+# Frontend dependencies
+cd src/adapters/driving/web
+pnpm install
+```
+
+## Step 5: Verify Installation
+
+```bash
+# Build everything
+dotnet build
+
+# Run tests
+dotnet test
+```
+
+If all tests pass, you're ready to go!
+
+## GPU Layout Engine (Optional)
+
+For large codebases (1000+ nodes), the GPU layout engine provides significantly faster graph layout computation.
+
+<Steps>
+  <Step title="Install Rust">
+    ```bash
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    ```
+  </Step>
+  <Step title="Build GraphPU">
+    ```bash
+    cd lib/graphpu
+    cargo build --features server --bin graphpu-server --release
+    ```
+  </Step>
+  <Step title="Verify GPU Support">
+    ```bash
+    ./target/release/graphpu-server --check
+    # Should output: Metal (macOS) or Vulkan (Linux/Windows) available
+    ```
+  </Step>
+</Steps>
+
+## What's Next?
+
+<Card title="Quickstart" icon="rocket" href="/get-started/quickstart">
+  Analyze and visualize your first codebase
+</Card>

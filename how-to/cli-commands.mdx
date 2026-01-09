@@ -1,0 +1,307 @@
+---
+title: CLI Commands
+description: "Complete reference for CodeGraph command-line interface"
+---
+
+# CLI Commands
+
+CodeGraph provides a command-line interface for analyzing codebases and managing the graph.
+
+## Global Options
+
+These options apply to all commands:
+
+| Option | Description |
+|--------|-------------|
+| `--help`, `-h` | Show help information |
+| `--version`, `-v` | Show version |
+| `--verbose` | Enable verbose output |
+| `--quiet`, `-q` | Suppress non-error output |
+
+## analyze
+
+Analyze a .NET solution or project and save the graph to Neo4j.
+
+```bash
+codegraph analyze <path> [options]
+```
+
+### Arguments
+
+| Argument | Description |
+|----------|-------------|
+| `path` | Path to `.sln` or `.csproj` file |
+
+### Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--depth` | `class` | Analysis depth: `namespace`, `class`, or `method` |
+| `--include` | `*` | Glob pattern for projects to include |
+| `--exclude` | | Glob pattern for projects to exclude |
+| `--incremental` | | Only analyze changed files |
+| `--clear` | | Clear existing graph before analysis |
+| `--neo4j-uri` | env | Neo4j connection URI |
+| `--neo4j-user` | env | Neo4j username |
+| `--neo4j-password` | env | Neo4j password |
+
+### Examples
+
+```bash
+# Basic analysis
+codegraph analyze ./MyProject.sln
+
+# With environment variables (recommended)
+npx @dotenvx/dotenvx run -- sh -c 'codegraph analyze ./MyProject.sln'
+
+# Exclude test projects
+codegraph analyze ./MyProject.sln --exclude "*Tests*"
+
+# Method-level analysis
+codegraph analyze ./MyProject.sln --depth method
+
+# Incremental update
+codegraph analyze ./MyProject.sln --incremental
+
+# Clear and re-analyze
+codegraph analyze ./MyProject.sln --clear
+```
+
+---
+
+## serve
+
+Start the API server and web frontend.
+
+```bash
+codegraph serve [options]
+```
+
+### Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--api-port` | `5050` | API server port |
+| `--web-port` | `5173` | Web frontend port |
+| `--no-web` | | Don't start web frontend |
+| `--no-gpu` | | Don't start GPU server |
+
+### Examples
+
+```bash
+# Start everything
+codegraph serve
+
+# API only
+codegraph serve --no-web
+
+# Custom ports
+codegraph serve --api-port 8080 --web-port 3000
+```
+
+---
+
+## layout
+
+Manage graph layout positions.
+
+### layout compute
+
+Compute layout using GPU or CPU.
+
+```bash
+codegraph layout compute [options]
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--gpu` | | Force GPU computation |
+| `--cpu` | | Force CPU computation |
+| `--iterations` | `1000` | Number of iterations |
+| `--gravity` | `1.0` | Gravity strength |
+
+```bash
+# GPU layout
+codegraph layout compute --gpu
+
+# Custom parameters
+codegraph layout compute --iterations 2000 --gravity 1.5
+```
+
+### layout clear
+
+Clear all layout positions.
+
+```bash
+codegraph layout clear
+```
+
+### layout status
+
+Check layout status.
+
+```bash
+codegraph layout status
+```
+
+---
+
+## overlay
+
+Manage overlay plugins.
+
+### overlay list
+
+List available overlays.
+
+```bash
+codegraph overlay list
+```
+
+### overlay apply
+
+Apply an overlay.
+
+```bash
+codegraph overlay apply <plugin-id> [options]
+```
+
+```bash
+# Apply git activity
+codegraph overlay apply git-activity
+
+# Apply with options
+codegraph overlay apply git-activity --since "2024-01-01"
+
+# Apply test coverage
+codegraph overlay apply test-coverage --report coverage.xml
+```
+
+### overlay remove
+
+Remove an overlay.
+
+```bash
+codegraph overlay remove <plugin-id>
+```
+
+### overlay status
+
+Check overlay status.
+
+```bash
+codegraph overlay status <plugin-id>
+```
+
+---
+
+## gpu
+
+Manage GPU layout server.
+
+### gpu status
+
+Check GPU availability.
+
+```bash
+codegraph gpu status
+```
+
+Output:
+```
+GPU Status: Available
+Backend: Metal
+Device: Apple M1 Pro
+Server: ws://localhost:9002 (connected)
+```
+
+### gpu start
+
+Start the GPU server.
+
+```bash
+codegraph gpu start
+```
+
+### gpu stop
+
+Stop the GPU server.
+
+```bash
+codegraph gpu stop
+```
+
+---
+
+## query
+
+Run Cypher queries against Neo4j.
+
+```bash
+codegraph query <cypher>
+```
+
+### Examples
+
+```bash
+# Count nodes
+codegraph query "MATCH (n:CodeNode) RETURN count(n)"
+
+# Find dependencies
+codegraph query "MATCH (n)-[:DEPENDS_ON]->(m) WHERE n.name = 'UserService' RETURN m.name"
+
+# Interactive mode
+codegraph query --interactive
+```
+
+---
+
+## export
+
+Export graph data.
+
+```bash
+codegraph export <format> <output> [options]
+```
+
+### Formats
+
+| Format | Description |
+|--------|-------------|
+| `json` | JSON format |
+| `graphml` | GraphML format |
+| `dot` | Graphviz DOT format |
+| `csv` | CSV (nodes and edges) |
+
+### Examples
+
+```bash
+# Export to JSON
+codegraph export json graph.json
+
+# Export to GraphML
+codegraph export graphml graph.graphml
+
+# Export only specific node types
+codegraph export json graph.json --types "Class,Interface"
+```
+
+---
+
+## Environment Variables
+
+The CLI reads these environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `Neo4j__Uri` | Neo4j connection URI |
+| `Neo4j__Username` | Neo4j username |
+| `Neo4j__Password` | Neo4j password |
+| `Neo4j__Database` | Neo4j database name |
+| `GRAPHPU_URI` | GPU server WebSocket URI |
+
+Use `npx @dotenvx/dotenvx run` to load from `.env`:
+
+```bash
+npx @dotenvx/dotenvx run -- codegraph analyze ./MyProject.sln
+```

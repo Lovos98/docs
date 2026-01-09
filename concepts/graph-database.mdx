@@ -1,0 +1,212 @@
+---
+title: Graph Database
+description: "Why code structure belongs in a graph database"
+---
+
+# Graph Database
+
+CodeGraph stores code structure in a graph database. This enables powerful queries that are difficult or impossible with traditional relational databases.
+
+## Why a Graph Database?
+
+Code structure is inherently a graph:
+- Classes depend on other classes
+- Methods call other methods
+- Files import other files
+- Namespaces contain types
+
+These are **relationships**, and graph databases treat relationships as first-class citizens.
+
+### Relational vs Graph
+
+**Find all classes that depend on UserService:**
+
+<Tabs>
+  <Tab title="SQL (Relational)">
+    ```sql
+    -- Multiple joins, gets complex fast
+    SELECT DISTINCT c1.name
+    FROM classes c1
+    JOIN dependencies d ON c1.id = d.source_id
+    JOIN classes c2 ON d.target_id = c2.id
+    WHERE c2.name = 'UserService'
+    UNION
+    SELECT DISTINCT c1.name
+    FROM classes c1
+    JOIN dependencies d1 ON c1.id = d1.source_id
+    JOIN classes c2 ON d1.target_id = c2.id
+    JOIN dependencies d2 ON c2.id = d2.source_id
+    JOIN classes c3 ON d2.target_id = c3.id
+    WHERE c3.name = 'UserService'
+    -- ... continues for each level of depth
+    ```
+  </Tab>
+  <Tab title="Graph Query">
+    ```cypher
+    -- Natural and simple
+    MATCH (n)-[:DEPENDS_ON*]->(target {name: 'UserService'})
+    RETURN DISTINCT n.name
+    ```
+  </Tab>
+</Tabs>
+
+The graph query handles arbitrary depth traversal in a single line.
+
+## Data Model
+
+### Nodes
+
+Code entities are stored as nodes with properties:
+
+```json
+{
+  "id": "MyApp.Services.UserService",
+  "name": "UserService",
+  "type": "Class",
+  "fullName": "MyApp.Services.UserService",
+  "filePath": "/src/Services/UserService.cs",
+  "namespace": "MyApp.Services",
+  "visibility": "Public",
+  "isAbstract": false,
+  "isStatic": false
+}
+```
+
+### Node Types
+
+| Type | Description |
+|------|-------------|
+| `Namespace` | Logical grouping |
+| `Class` | Class definition |
+| `Interface` | Interface definition |
+| `Struct` | Struct definition |
+| `Enum` | Enum definition |
+| `Method` | Method definition |
+
+### Edges (Relationships)
+
+Connections between nodes:
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `CONTAINS` | Namespace contains type | `MyApp` → `UserService` |
+| `DEPENDS_ON` | Uses/references another node | `OrderService` → `UserService` |
+| `INHERITS` | Class inheritance | `AdminUser` → `User` |
+| `IMPLEMENTS` | Interface implementation | `UserService` → `IUserService` |
+| `CALLS` | Method invocation | `CreateOrder()` → `GetUser()` |
+
+## Common Query Patterns
+
+### Find Dependencies
+
+```cypher
+// Direct dependencies
+MATCH (n {name: 'UserService'})-[:DEPENDS_ON]->(dep)
+RETURN dep.name, dep.type
+
+// Transitive dependencies (any depth)
+MATCH (n {name: 'UserService'})-[:DEPENDS_ON*]->(dep)
+RETURN DISTINCT dep.name, dep.type
+```
+
+### Find Dependents
+
+```cypher
+// What depends on this class?
+MATCH (dependent)-[:DEPENDS_ON*]->(n {name: 'UserService'})
+RETURN DISTINCT dependent.name, dependent.type
+```
+
+### Shortest Path
+
+```cypher
+// How are two classes connected?
+MATCH path = shortestPath(
+  (a {name: 'OrderController'})-[*]-(b {name: 'Database'})
+)
+RETURN path
+```
+
+### Circular Dependencies
+
+```cypher
+// Find cycles in the dependency graph
+MATCH path = (n)-[:DEPENDS_ON*2..10]->(n)
+RETURN path
+LIMIT 10
+```
+
+### Most Connected Nodes
+
+```cypher
+// Potential god classes
+MATCH (n {type: 'Class'})-[:DEPENDS_ON]->(dep)
+RETURN n.name, count(dep) as dependencies
+ORDER BY dependencies DESC
+LIMIT 20
+```
+
+### Orphan Classes
+
+```cypher
+// Potentially dead code
+MATCH (n {type: 'Class'})
+WHERE NOT ()-[:DEPENDS_ON]->(n)
+RETURN n.name, n.filePath
+```
+
+## Current Implementation
+
+CodeGraph currently uses **Neo4j** as its graph database, but the architecture allows for other implementations:
+
+| Database | Status | Notes |
+|----------|--------|-------|
+| Neo4j | Supported | Current default, mature graph database |
+| Memgraph | Planned | Neo4j-compatible, in-memory performance |
+| Amazon Neptune | Possible | Cloud-native option |
+| ArangoDB | Possible | Multi-model database |
+
+The `IGraphStorage` port abstracts the database, making it possible to swap implementations without changing core logic.
+
+## Database-Agnostic Design
+
+CodeGraph's core doesn't know which database it's using. It only knows about the `IGraphStorage` interface:
+
+```csharp
+public interface IGraphStorage
+{
+    Task<IEnumerable<GraphNode>> GetNodesAsync(CancellationToken ct);
+    Task<IEnumerable<GraphEdge>> GetEdgesAsync(CancellationToken ct);
+    Task SaveAnalysisResultAsync(...);
+    Task UpdateNodeAttributesAsync(...);
+}
+```
+
+This means:
+- You can run CodeGraph with different databases
+- Tests can use an in-memory implementation
+- Future database options are easy to add
+
+## Performance Considerations
+
+Graph databases excel at:
+- **Traversals**: Following relationships is O(1) per hop
+- **Pattern matching**: Finding structural patterns in the graph
+- **Variable-depth queries**: "Find all transitive dependencies"
+
+They may be slower for:
+- **Aggregations over all data**: Full graph scans
+- **Simple key-value lookups**: Overkill for basic queries
+
+For code visualization, the traversal benefits far outweigh the costs.
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Philosophy" icon="lightbulb" href="/philosophy">
+    The attribute-only design philosophy
+  </Card>
+  <Card title="Overlay System" icon="layer-group" href="/concepts/overlay-system">
+    How overlays add data to the graph
+  </Card>
+</CardGroup>
