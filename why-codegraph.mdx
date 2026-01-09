@@ -3,8 +3,6 @@ title: Why CodeGraph?
 description: "What makes CodeGraph different from other code analysis tools"
 ---
 
-# Why CodeGraph?
-
 ## The Problem
 
 Large codebases are hard to understand. Traditional tools show you:
@@ -19,7 +17,7 @@ Meanwhile, the real questions developers ask are graph questions:
 - "What breaks if I remove this?"
 - "How does user input reach the database?"
 
-## 3D Instead of 2D Chaos
+## 3D Visualisation
 
 Traditional dependency diagrams become unreadable at scale. Lines cross, nodes overlap, and you end up with a tangled mess that hides more than it reveals.
 
@@ -40,30 +38,9 @@ Traditional dependency diagrams become unreadable at scale. Lines cross, nodes o
 
 In 3D space, your codebase becomes a **place you can explore**. Related components cluster together naturally through force-directed layout. You can fly through your architecture, zoom into areas of interest, and see the whole structure at once.
 
-## AI-Powered Code Understanding (RAG)
-
-The graph database enables something 2D tools can't do: **give an LLM actual understanding of your architecture**.
-
-<Card title="RAG for Code" icon="robot">
-  Connect an LLM to your codebase graph. Ask questions like:
-  - "What classes handle user authentication?"
-  - "Show me the data flow from API to database"
-  - "What would break if I remove this service?"
-  - "Find all paths where user input reaches SQL queries"
-</Card>
-
-Traditional RAG uses flat file search—it finds text but doesn't understand relationships. CodeGraph's graph structure provides:
-
-| Approach | What It Knows |
-|----------|--------------|
-| File search | "This file mentions UserService" |
-| CodeGraph RAG | "UserService is called by AuthController, depends on IUserRepository, and is instantiated in DependencyConfig" |
-
-The graph gives the LLM **context about relationships**, not just text matches.
-
 ## Plugin System
 
-CodeGraph is designed for extensibility. Anyone can write plugins that add data layers:
+CodeGraph is designed for extensibility. Anyone can write plugins that add data layers to the visualization.
 
 | Plugin Type | Examples |
 |-------------|----------|
@@ -71,19 +48,11 @@ CodeGraph is designed for extensibility. Anyone can write plugins that add data 
 | **Analyzer plugins** | Support for additional languages |
 | **Export plugins** | Output to different formats (JSON, GraphML, DOT) |
 
-Plugins use the same interfaces as built-in components:
+Plugins use the same interfaces as built-in components—community plugins are first-class citizens.
 
-```csharp
-public interface IOverlayPlugin
-{
-    string Id { get; }
-    string Name { get; }
-    Task ApplyAsync(IGraphStorage storage, CancellationToken ct);
-    Task RemoveAsync(IGraphStorage storage, CancellationToken ct);
-}
-```
-
-This means community plugins are first-class citizens—they can do anything built-in plugins can do.
+<Card title="Learn More" icon="plug" href="/concepts/plugin-system">
+  See how to build your own plugins
+</Card>
 
 ## Attribute Philosophy
 
@@ -95,38 +64,20 @@ Inspired by **SideFX Houdini**, CodeGraph treats everything as attributes on nod
   "name": "UserService",
   "type": "Class",
   "git:churn": 45,
-  "git:authors": 3,
   "coverage:percent": 85.5,
   "complexity:cyclomatic": 12
 }
 ```
 
-Each plugin writes to its own namespace (`git:`, `coverage:`, `complexity:`). This enables:
+Each plugin writes to its own namespace (`git:`, `coverage:`, `complexity:`). This enables flexible, conflict-free extensibility.
 
-- **No schema changes** when adding new data
-- **Clean removal** — delete all `git:*` attributes in one operation
-- **No conflicts** — plugins can't overwrite each other's data
-- **Flexible visualization** — map any attribute to color, size, or badges
+<Card title="Learn More" icon="lightbulb" href="/philosophy">
+  Understand the attribute-only design philosophy
+</Card>
 
 ## Dataflow and Taint Analysis
 
 CodeGraph enables **security-focused queries** that trace data through your codebase:
-
-### Taint Analysis
-
-Find paths where untrusted input reaches sensitive operations:
-
-```cypher
-// Find all paths from user input to database queries
-MATCH path = (source:Method)-[:CALLS*]->(sink:Method)
-WHERE source.name CONTAINS 'Request'
-  AND sink.name CONTAINS 'Execute'
-RETURN path
-```
-
-### Dataflow Queries
-
-Understand how data moves through your system:
 
 | Query | Purpose |
 |-------|---------|
@@ -136,42 +87,6 @@ Understand how data moves through your system:
 | Circular dependencies | Find architectural violations |
 
 This transforms security analysis from "grep and hope" to **structural queries with guaranteed coverage**.
-
-## Other Possibilities
-
-The graph structure enables use cases beyond visualization:
-
-<AccordionGroup>
-  <Accordion title="Architecture Enforcement">
-    Define rules about what can depend on what. Automatically detect violations in CI/CD.
-    ```
-    Rule: Controllers cannot directly access Repositories
-    Violation: OrderController → OrderRepository (should go through OrderService)
-    ```
-  </Accordion>
-
-  <Accordion title="Change Impact Analysis">
-    Before merging a PR, query the graph to see what might break:
-    - What depends on the changed code?
-    - What tests cover this path?
-    - Which teams own the affected code?
-  </Accordion>
-
-  <Accordion title="Technical Debt Quantification">
-    Combine metrics to score technical debt:
-    - High churn + high complexity = maintenance nightmare
-    - Low coverage + many dependents = risky code
-    - Many authors + frequent changes = coordination overhead
-  </Accordion>
-
-  <Accordion title="Onboarding Acceleration">
-    New developers explore the codebase spatially. See how components connect before reading code. Reduce ramp-up time from months to weeks.
-  </Accordion>
-
-  <Accordion title="Documentation Generation">
-    Generate architecture diagrams from the actual code. Always up-to-date because it's extracted, not hand-drawn.
-  </Accordion>
-</AccordionGroup>
 
 ## Why Not Alternatives?
 

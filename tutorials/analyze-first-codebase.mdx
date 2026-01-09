@@ -5,28 +5,11 @@ description: "Step-by-step guide to analyzing a .NET solution"
 
 # Analyze Your First Codebase
 
-This tutorial walks you through analyzing a real .NET codebase and understanding what CodeGraph extracts.
+This tutorial walks you through analyzing a real .NET codebase with CodeGraph.
 
-## What Gets Extracted?
-
-CodeGraph uses Roslyn to analyze your C# code and extract:
-
-| Entity | Description | Graph Node Type |
-|--------|-------------|-----------------|
-| Namespaces | Logical groupings | `Namespace` |
-| Classes | Class definitions | `Class` |
-| Interfaces | Interface definitions | `Interface` |
-| Structs | Struct definitions | `Struct` |
-| Enums | Enum definitions | `Enum` |
-| Methods | Method definitions | `Method` |
-
-| Relationship | Description | Graph Edge Type |
-|--------------|-------------|-----------------|
-| Contains | Namespace contains class | `CONTAINS` |
-| Depends On | Class uses another class | `DEPENDS_ON` |
-| Implements | Class implements interface | `IMPLEMENTS` |
-| Inherits | Class inherits from class | `INHERITS` |
-| Calls | Method calls another method | `CALLS` |
+<Note>
+For details on what nodes and edges CodeGraph extracts, see the [Analyzer](/concepts/analyzer) page.
+</Note>
 
 ## Step 1: Choose a Codebase
 

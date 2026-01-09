@@ -17,7 +17,35 @@ CodeGraph is actively evolving. Here's what we're working on and where we need c
   <Card title="Multi-Language Support" icon="code">
     TypeScript, Python, Java, Go, and more via tree-sitter parsers.
   </Card>
+  <Card title="Snapshot Compare" icon="code-compare">
+    Ghost previews comparing old and new repository states. See what changed between commits, branches, or releases.
+  </Card>
+  <Card title="Git Integration" icon="code-branch">
+    Direct git integration for branch analysis, commit history, and blame data without external tools.
+  </Card>
+  <Card title="Live File Watcher" icon="eye">
+    Auto-analyze when files change. Keep your graph in sync with your codebase in real-time.
+  </Card>
 </CardGroup>
+
+## AI-Powered Code Understanding (RAG)
+
+The graph database enables something 2D tools can't do: **give an LLM actual understanding of your architecture**.
+
+Connect an LLM to your codebase graph and ask questions like:
+- "What classes handle user authentication?"
+- "Show me the data flow from API to database"
+- "What would break if I remove this service?"
+- "Find all paths where user input reaches SQL queries"
+
+Traditional RAG uses flat file search—it finds text but doesn't understand relationships. CodeGraph's graph structure provides:
+
+| Approach | What It Knows |
+|----------|--------------|
+| File search | "This file mentions UserService" |
+| CodeGraph RAG | "UserService is called by AuthController, depends on IUserRepository, and is instantiated in DependencyConfig" |
+
+The graph gives the LLM **context about relationships**, not just text matches.
 
 ## Planned Edge Types
 

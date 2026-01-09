@@ -28,46 +28,46 @@ The analyzer is the first layer of CodeGraph. It parses your source code and ext
 
 Nodes represent code entities in your codebase. CodeGraph extracts 19 different node types:
 
-| Type | Category | Description |
-|------|----------|-------------|
-| `Namespace` | Container | Logical grouping of types |
-| `Class` | Container | Class definition |
-| `Struct` | Container | Value type definition |
-| `Interface` | Container | Interface contract |
-| `Enum` | Container | Enumeration type |
-| `Record` | Container | Record type (C# 9+) |
-| `Method` | Member | Method definition |
-| `Constructor` | Member | Constructor definition |
-| `Property` | Member | Property definition |
-| `Field` | Member | Field definition |
-| `Event` | Member | Event definition |
-| `Indexer` | Member | Indexer definition |
-| `Operator` | Member | Operator overload |
-| `Parameter` | Other | Method/constructor parameter |
-| `LocalVariable` | Other | Local variable |
-| `EnumMember` | Other | Enum value |
-| `Delegate` | Other | Delegate type |
-| `Lambda` | Other | Lambda expression |
+| Category | Type | Description |
+|----------|------|-------------|
+| 🔵 Container | `Namespace` | Logical grouping of types |
+| 🔵 Container | `Class` | Class definition |
+| 🔵 Container | `Struct` | Value type definition |
+| 🔵 Container | `Interface` | Interface contract |
+| 🔵 Container | `Enum` | Enumeration type |
+| 🔵 Container | `Record` | Record type (C# 9+) |
+| 🟢 Member | `Method` | Method definition |
+| 🟢 Member | `Constructor` | Constructor definition |
+| 🟢 Member | `Property` | Property definition |
+| 🟢 Member | `Field` | Field definition |
+| 🟢 Member | `Event` | Event definition |
+| 🟢 Member | `Indexer` | Indexer definition |
+| 🟢 Member | `Operator` | Operator overload |
+| 🟡 Other | `Parameter` | Method/constructor parameter |
+| 🟡 Other | `LocalVariable` | Local variable |
+| 🟡 Other | `EnumMember` | Enum value |
+| 🟡 Other | `Delegate` | Delegate type |
+| 🟡 Other | `Lambda` | Lambda expression |
 
 ## Edge Types
 
 Edges represent relationships between nodes:
 
-| Edge | Category | Description | Example | Status |
-|------|----------|-------------|---------|--------|
-| `Contains` | Structural | Parent contains child | `Namespace` → `Class` | Implemented |
-| `Inherits` | Structural | Class extends base | `AdminUser` → `User` | Implemented |
-| `Implements` | Structural | Type implements interface | `UserService` → `IUserService` | Implemented |
-| `Overrides` | Structural | Method overrides base | `Derived.DoWork()` → `Base.DoWork()` | Implemented |
-| `Calls` | Coupling | Method invokes another | `CreateOrder()` → `GetUser()` | Implemented |
-| `Instantiates` | Coupling | Creates instance via `new` | `Handler` → `new Service()` | Implemented |
-| `References` | Coupling | Type/member reference | Field types, return types, parameters | Implemented |
-| `Reads` | DataFlow | Accesses field/property value | `GetName()` reads `_name` | Planned |
-| `Writes` | DataFlow | Assigns to field/property | `SetName()` writes `_name` | Planned |
-| `Returns` | DataFlow | Method returns a type | `GetUser()` returns `User` | Planned |
-| `Creates` | DataFlow | Method instantiates a type | `CreateOrder()` creates `Order` | Planned |
-| `Throws` | DataFlow | Method can throw exception | `Validate()` throws `ValidationException` | Planned |
-| `DataFlowsTo` | DataFlow | Data flows from variable A to B | Track through assignments | Planned |
+| Category | Edge | Description | Example | Status |
+|----------|------|-------------|---------|--------|
+| 🔵 Structural | `Contains` | Parent contains child | `Namespace` → `Class` | Implemented |
+| 🔵 Structural | `Inherits` | Class extends base | `AdminUser` → `User` | Implemented |
+| 🔵 Structural | `Implements` | Type implements interface | `UserService` → `IUserService` | Implemented |
+| 🔵 Structural | `Overrides` | Method overrides base | `Derived.DoWork()` → `Base.DoWork()` | Implemented |
+| 🟢 Coupling | `Calls` | Method invokes another | `CreateOrder()` → `GetUser()` | Implemented |
+| 🟢 Coupling | `Instantiates` | Creates instance via `new` | `Handler` → `new Service()` | Implemented |
+| 🟢 Coupling | `References` | Type/member reference | Field types, return types, parameters | Implemented |
+| 🟡 DataFlow | `Reads` | Accesses field/property value | `GetName()` reads `_name` | Planned |
+| 🟡 DataFlow | `Writes` | Assigns to field/property | `SetName()` writes `_name` | Planned |
+| 🟡 DataFlow | `Returns` | Method returns a type | `GetUser()` returns `User` | Planned |
+| 🟡 DataFlow | `Creates` | Method instantiates a type | `CreateOrder()` creates `Order` | Planned |
+| 🟡 DataFlow | `Throws` | Method can throw exception | `Validate()` throws `ValidationException` | Planned |
+| 🟡 DataFlow | `DataFlowsTo` | Data flows from variable A to B | Track through assignments | Planned |
 
 <Note>
 The `References` edge captures type dependencies from field types, method return types, parameter types, and generic type arguments.
