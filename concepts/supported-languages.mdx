@@ -17,30 +17,47 @@ CodeGraph currently supports **C#** with plans to expand to other languages.
 
 CodeGraph uses **Roslyn**, Microsoft's official compiler platform. This provides semantic analysis—understanding types, not just syntax—with full dependency resolution across your entire solution.
 
-### What Gets Extracted
-
-See the [Analyzer](/concepts/analyzer) page for detailed information about node types and relationship types.
-
-**Nodes** (code entities):
-- Namespaces, Classes, Interfaces, Structs, Enums, Records
-- Methods, Constructors, Properties, Fields, Events
-
-**Edges** (relationships):
-- Structural: Contains, Inherits, Implements, Overrides
-- Coupling: Calls, Instantiates, References
+See the [Analyzer](/concepts/analyzer) page for detailed information about what gets extracted.
 
 ## Future Languages
 
-We're planning support for additional languages via [tree-sitter](https://tree-sitter.github.io/tree-sitter/):
+We're planning support for additional languages via [tree-sitter](https://tree-sitter.github.io/tree-sitter/), which supports **100+ programming languages**.
 
-- TypeScript / JavaScript
-- Python
-- Java
-- Go
-- Rust
+### High Priority
+
+Languages we're actively planning to support:
+
+| Language | Use Case |
+|----------|----------|
+| TypeScript / JavaScript | Web applications, Node.js backends |
+| Python | Data science, ML pipelines, scripting |
+| Java | Enterprise applications |
+| Go | Cloud infrastructure, microservices |
+| Rust | Systems programming, performance-critical code |
+
+### Also Possible
+
+Tree-sitter has parsers for many more languages:
+
+- **Systems**: C, C++, Zig, Nim
+- **JVM**: Kotlin, Scala, Groovy
+- **Functional**: Haskell, OCaml, Elixir, F#
+- **Scripting**: Ruby, PHP, Perl, Lua
+- **Scientific**: MATLAB, R, Julia
+- **Mobile**: Swift, Objective-C
+- **Query**: SQL, GraphQL
+
+### What Works Best
+
+CodeGraph works with any language that has clear structural elements—classes, functions, modules, imports. This includes:
+
+- Object-oriented languages (Java, C#, Python)
+- Functional languages (Haskell, OCaml, F#)
+- Multi-paradigm languages (Rust, Go, Kotlin)
+- Procedural languages (C, Lua)
 
 <Note>
-Tree-sitter provides **syntactic** analysis. Semantic accuracy may be lower than Roslyn for C#.
+Tree-sitter provides **syntactic** analysis. Semantic accuracy may be lower than Roslyn for C#. Type inference and cross-file resolution depend on the language plugin implementation.
 </Note>
 
 ## What's Next?
