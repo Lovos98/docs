@@ -226,17 +226,3 @@ Real-world performance on Apple M1 Pro:
     - Add specific indexes for your query patterns
   </Accordion>
 </AccordionGroup>
-
-## Progressive Loading (Future)
-
-CodeGraph will support progressive loading for very large graphs:
-
-```javascript
-// Future API
-const graph = await loadGraph({
-  level: 'namespace',  // Start with high-level view
-  expandOnClick: true  // Load details on demand
-});
-```
-
-This will enable exploring million-node graphs by loading detail levels on demand.
