@@ -33,6 +33,10 @@
     {
       "name": "API Reference",
       "url": "/api-reference"
+    },
+    {
+      "name": "Contributing",
+      "url": "/contributing"
     }
   ],
   "navigation": [
@@ -63,17 +67,6 @@
       ]
     },
     {
-      "group": "Architecture",
-      "pages": [
-        "concepts/architecture",
-        "concepts/analyzer",
-        "concepts/gpu-layout-engine",
-        "concepts/graph-database",
-        "concepts/overlay-system",
-        "concepts/plugin-system"
-      ]
-    },
-    {
       "group": "Reference",
       "pages": [
         "how-to/api-usage",
@@ -92,10 +85,21 @@
       ]
     },
     {
-      "group": "Community",
+      "group": "Contributing",
       "pages": [
-        "contributing/development-setup",
-        "contributing/overview"
+        "contributing/overview",
+        "contributing/development-setup"
+      ]
+    },
+    {
+      "group": "Architecture",
+      "pages": [
+        "contributing/architecture",
+        "contributing/analyzer",
+        "contributing/gpu-layout-engine",
+        "contributing/graph-database",
+        "contributing/overlay-system",
+        "contributing/plugin-system"
       ]
     }
   ],
