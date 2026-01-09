@@ -40,17 +40,17 @@
       "group": "Introduction",
       "pages": [
         "introduction",
-        "why-codegraph",
         "philosophy",
-        "roadmap"
+        "roadmap",
+        "why-codegraph"
       ]
     },
     {
       "group": "Getting Started",
       "pages": [
+        "get-started/configuration",
         "get-started/installation",
-        "get-started/quickstart",
-        "get-started/configuration"
+        "get-started/quickstart"
       ]
     },
     {
@@ -58,8 +58,8 @@
       "pages": [
         "tutorials/analyze-first-codebase",
         "tutorials/explore-3d-graph",
-        "tutorials/using-overlays",
-        "how-to/custom-overlays"
+        "how-to/custom-overlays",
+        "tutorials/using-overlays"
       ]
     },
     {
@@ -67,19 +67,19 @@
       "pages": [
         "concepts/architecture",
         "concepts/analyzer",
-        "concepts/graph-database",
         "concepts/gpu-layout-engine",
-        "concepts/plugin-system",
-        "concepts/overlay-system"
+        "concepts/graph-database",
+        "concepts/overlay-system",
+        "concepts/plugin-system"
       ]
     },
     {
       "group": "Reference",
       "pages": [
-        "concepts/supported-languages",
-        "how-to/cli-commands",
         "how-to/api-usage",
-        "how-to/large-codebases"
+        "how-to/cli-commands",
+        "how-to/large-codebases",
+        "concepts/supported-languages"
       ]
     },
     {
@@ -94,8 +94,8 @@
     {
       "group": "Community",
       "pages": [
-        "contributing/overview",
-        "contributing/development-setup"
+        "contributing/development-setup",
+        "contributing/overview"
       ]
     }
   ],
