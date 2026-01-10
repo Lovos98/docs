@@ -5,8 +5,6 @@ description: "Visualize your codebase as an interactive 3D graph"
 
 ## The Problem
 
-Codebases are growing faster than ever—both from AI-generated code and organic team growth.
-
 The race to ship quickly often leads to sprawling complexity. Code multiplies faster than teams can understand or control it. Large legacy systems become black boxes that only a few developers dare to touch.
 
 Without improved tooling and better visibility, codebases become exponentially harder to reason about and maintain—for both humans and AI agents—ultimately slowing you down.
@@ -20,6 +18,9 @@ CodeGraph transforms your codebase into an interactive 3D graph. See your archit
 <CardGroup cols={2}>
   <Card title="3D Exploration" icon="cube">
     Navigate your codebase spatially. Zoom, rotate, fly through your architecture.
+  </Card>
+  <Card title="Depth Controls" icon="sliders">
+    Select nodes and expand connections by depth. See 1, 2, or N levels of dependencies.
   </Card>
   <Card title="Impact Analysis" icon="bolt">
     See what breaks before you merge. Query all dependents of changed code.
@@ -55,7 +56,7 @@ Code goes in, explorable architecture comes out.
 | Aspect | Traditional Tools | CodeGraph |
 |--------|-------------------|-----------|
 | **Structure** | File trees | Semantic model (classes, dependencies, relationships) |
-| **Visualization** | 2D diagrams that break at scale | 3D space with depth and clustering |
+| **Visualization** | 2D diagrams that break at scale | 3D space with depth-controlled exploration |
 | **Search** | Grep results (text matches) | Graph queries (structural relationships) |
 | **Documentation** | Static docs (outdated instantly) | Live visualization (always current) |
 | **Connections** | Lines crossing everywhere | Rotate and navigate to see true relationships |
