@@ -3,56 +3,48 @@ title: Introduction
 description: "Visualize your codebase as an interactive 3D graph"
 ---
 
-CodeGraph transforms your codebase into an interactive 3D graph. See your architecture, explore dependencies, and understand structure that's invisible in traditional code navigation.
-
-<Frame>
-  <img src="/images/overview.png" alt="CodeGraph 3D visualization of a codebase" />
-</Frame>
-
 ## The Problem
 
-Large codebases are hard to understand. Traditional tools show you:
-- **File trees** — not architecture
-- **Grep results** — not relationships
-- **2D diagrams** — cluttered, overlapping, unusable at scale
-- **Static documentation** — outdated the moment it's written
+Codebases are growing faster than ever with AI.
 
-Meanwhile, the real questions developers ask are graph questions:
-- "What depends on this class?"
-- "Where does this data flow?"
-- "What breaks if I remove this?"
-- "How does user input reach the database?"
+The race to ship quickly with AI often leads to sprawling complexity—code multiplying faster than teams can understand or control it.
 
-## Three Layers
+Without improved tooling and better safeguards, it can make codebases exponentially harder to reason about and maintain for both humans and agents, ultimately slowing you down.
+
+**This is where CodeGraph comes in.**
+
+CodeGraph transforms your codebase into an interactive 3D graph. See your architecture, explore dependencies, and understand structure that's invisible in traditional code navigation.
+
+## How It Works
 
 CodeGraph is built on three layers—each does one job:
 
 <Steps>
-  <Step title="Analyze" icon="magnifying-glass">
+  <Step title="Analyze" icon="magnifying-glass" iconColor="#6366F1">
     Parse your source code and understand its structure
   </Step>
-  <Step title="Extract" icon="diagram-project">
+  <Step title="Extract" icon="diagram-project" iconColor="#6366F1">
     Pull out classes, methods, dependencies, inheritance, and call relationships into a graph database
   </Step>
-  <Step title="Visualize" icon="cube">
+  <Step title="Visualize" icon="cube" iconColor="#6366F1">
     Render the graph as an interactive 3D space you can explore
   </Step>
 </Steps>
 
-That's it. Code goes in, explorable architecture comes out.
+Code goes in, explorable architecture comes out.
 
-## 3D Visualisation
+## 3D Visualization
 
 Traditional dependency diagrams become unreadable at scale. Lines cross, nodes overlap, and you end up with a tangled mess that hides more than it reveals.
 
 <CardGroup cols={2}>
-  <Card title="2D Diagrams" icon="diagram-project">
-    - Lines crossing everywhere
-    - Nodes overlap and obscure each other
-    - Can't see depth or clustering
-    - Zoom in = lose context, zoom out = see nothing
+  <Card title="Traditional Tools" icon="diagram-project">
+    - **File trees** — not architecture
+    - **Grep results** — not relationships
+    - **2D diagrams** — cluttered, unusable at scale
+    - **Static docs** — outdated the moment they're written
   </Card>
-  <Card title="3D Space" icon="cube">
+  <Card title="CodeGraph" icon="cube">
     - Use depth to separate clusters
     - Navigate through your architecture
     - Rotate to see hidden connections
@@ -60,7 +52,7 @@ Traditional dependency diagrams become unreadable at scale. Lines cross, nodes o
   </Card>
 </CardGroup>
 
-In 3D space, your codebase becomes a **place you can explore**. Related components cluster together naturally through force-directed layout. You can fly through your architecture, zoom into areas of interest, and see the whole structure at once.
+In 3D space, your codebase becomes a **place you can explore**. Related components cluster together naturally through force-directed layout. Fly through your architecture, zoom into areas of interest, and see the whole structure at once.
 
 ## Key Features
 
