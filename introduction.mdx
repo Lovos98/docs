@@ -5,15 +5,32 @@ description: "Visualize your codebase as an interactive 3D graph"
 
 ## The Problem
 
-Codebases are growing faster than ever with AI.
+Codebases are growing faster than ever—both from AI-generated code and organic team growth.
 
-The race to ship quickly with AI often leads to sprawling complexity—code multiplying faster than teams can understand or control it.
+The race to ship quickly often leads to sprawling complexity. Code multiplies faster than teams can understand or control it. Large legacy systems become black boxes that only a few developers dare to touch.
 
-Without improved tooling and better safeguards, it can make codebases exponentially harder to reason about and maintain for both humans and agents, ultimately slowing you down.
+Without improved tooling and better visibility, codebases become exponentially harder to reason about and maintain—for both humans and AI agents—ultimately slowing you down.
 
 **This is where CodeGraph comes in.**
 
 CodeGraph transforms your codebase into an interactive 3D graph. See your architecture, explore dependencies, and understand structure that's invisible in traditional code navigation.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="3D Exploration" icon="cube">
+    Navigate your codebase spatially. Zoom, rotate, fly through your architecture.
+  </Card>
+  <Card title="Impact Analysis" icon="bolt">
+    See what breaks before you merge. Query all dependents of changed code.
+  </Card>
+  <Card title="Plugin System" icon="plug">
+    Add overlays for git activity, test coverage, complexity, and custom metrics.
+  </Card>
+  <Card title="Faster Onboarding" icon="graduation-cap">
+    New developers explore visually. Reduce ramp-up time from months to weeks.
+  </Card>
+</CardGroup>
 
 ## How It Works
 
@@ -33,49 +50,18 @@ CodeGraph is built on three layers—each does one job:
 
 Code goes in, explorable architecture comes out.
 
-## 3D Visualization
+## Traditional vs CodeGraph
 
-Traditional dependency diagrams become unreadable at scale. Lines cross, nodes overlap, and you end up with a tangled mess that hides more than it reveals.
-
-<CardGroup cols={2}>
-  <Card title="Traditional Tools" icon="diagram-project">
-    - **File trees** — not architecture
-    - **Grep results** — not relationships
-    - **2D diagrams** — cluttered, unusable at scale
-    - **Static docs** — outdated the moment they're written
-  </Card>
-  <Card title="CodeGraph" icon="cube">
-    - Use depth to separate clusters
-    - Navigate through your architecture
-    - Rotate to see hidden connections
-    - Natural spatial grouping by dependencies
-  </Card>
-</CardGroup>
+| Aspect | Traditional Tools | CodeGraph |
+|--------|-------------------|-----------|
+| **Structure** | File trees | Semantic model (classes, dependencies, relationships) |
+| **Visualization** | 2D diagrams that break at scale | 3D space with depth and clustering |
+| **Search** | Grep results (text matches) | Graph queries (structural relationships) |
+| **Documentation** | Static docs (outdated instantly) | Live visualization (always current) |
+| **Connections** | Lines crossing everywhere | Rotate and navigate to see true relationships |
+| **Scale** | Unusable beyond ~50 nodes | Handles thousands of nodes with GPU layout |
 
 In 3D space, your codebase becomes a **place you can explore**. Related components cluster together naturally through force-directed layout. Fly through your architecture, zoom into areas of interest, and see the whole structure at once.
-
-## Key Features
-
-<CardGroup cols={3}>
-  <Card title="3D Exploration" icon="cube">
-    Navigate your codebase spatially. Zoom, rotate, fly through your architecture.
-  </Card>
-  <Card title="Impact Analysis" icon="bolt">
-    See what breaks before you merge. Query all dependents of changed code.
-  </Card>
-  <Card title="Plugin System" icon="plug">
-    Add overlays for git activity, test coverage, complexity, and custom metrics.
-  </Card>
-  <Card title="Architecture Rules" icon="shield-check">
-    Enforce dependency rules. Detect violations automatically in CI/CD.
-  </Card>
-  <Card title="Dataflow Analysis" icon="route">
-    Trace data through your code. Find where user input reaches sensitive operations.
-  </Card>
-  <Card title="Faster Onboarding" icon="graduation-cap">
-    New developers explore visually. Reduce ramp-up time from months to weeks.
-  </Card>
-</CardGroup>
 
 ## Quick Start
 

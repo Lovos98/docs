@@ -6,7 +6,10 @@ description: "Where CodeGraph is heading"
 CodeGraph is actively evolving. Here's what we're working on and where we need community help.
 
 <CardGroup cols={3}>
-  <Card title="Dataflow Analysis" icon="arrows-split-up-and-left">
+  <Card title="Architecture Rules" icon="shield-check">
+    Enforce dependency rules. Detect violations automatically in CI/CD.
+  </Card>
+  <Card title="Dataflow Analysis" icon="route">
     Track data flows, field reads/writes, and taint sources.
   </Card>
   <Card title="LLM / RAG Integration" icon="robot">
@@ -45,7 +48,7 @@ These dataflow relationships are defined but not yet implemented:
 | <span style={{color: '#f59e0b'}}>DataFlow</span> | `Throws` | Method can throw exception |
 | <span style={{color: '#f59e0b'}}>DataFlow</span> | `DataFlowsTo` | Data flows from variable A to B |
 
-See the [Analyzer](/concepts/analyzer) page for currently implemented edges.
+See the [Analyzer](/contributing/analyzer) page for currently implemented edges.
 
 ## Growing Together
 
