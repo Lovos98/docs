@@ -44,7 +44,6 @@
       "group": "Introduction",
       "pages": [
         "introduction",
-        "philosophy",
         "roadmap",
         "why-codegraph"
       ]
@@ -61,7 +60,13 @@
       "group": "Tutorials",
       "pages": [
         "tutorials/analyze-first-codebase",
-        "tutorials/explore-3d-graph",
+        "tutorials/explore-3d-graph"
+      ]
+    },
+    {
+      "group": "Plugins",
+      "pages": [
+        "philosophy",
         "how-to/custom-overlays",
         "tutorials/using-overlays"
       ]
