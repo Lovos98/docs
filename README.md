@@ -23,13 +23,11 @@ mintlify dev
 ```
 ├── mint.json              # Mintlify configuration
 ├── introduction.mdx       # Landing page
-├── why-codegraph.mdx      # Value proposition
 ├── get-started/           # Installation & quickstart
 ├── tutorials/             # Step-by-step guides
-├── concepts/              # Architecture explanations
 ├── how-to/                # Task-oriented guides
 ├── api-reference/         # API documentation
-└── contributing/          # Contribution guides
+└── contributing/          # Contribution & architecture guides
 ```
 
 ## Contributing

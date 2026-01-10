@@ -9,6 +9,20 @@ CodeGraph transforms your codebase into an interactive 3D graph. See your archit
   <img src="/images/overview.png" alt="CodeGraph 3D visualization of a codebase" />
 </Frame>
 
+## The Problem
+
+Large codebases are hard to understand. Traditional tools show you:
+- **File trees** — not architecture
+- **Grep results** — not relationships
+- **2D diagrams** — cluttered, overlapping, unusable at scale
+- **Static documentation** — outdated the moment it's written
+
+Meanwhile, the real questions developers ask are graph questions:
+- "What depends on this class?"
+- "Where does this data flow?"
+- "What breaks if I remove this?"
+- "How does user input reach the database?"
+
 ## Three Layers
 
 CodeGraph is built on three layers—each does one job:
@@ -26,6 +40,27 @@ CodeGraph is built on three layers—each does one job:
 </Steps>
 
 That's it. Code goes in, explorable architecture comes out.
+
+## 3D Visualisation
+
+Traditional dependency diagrams become unreadable at scale. Lines cross, nodes overlap, and you end up with a tangled mess that hides more than it reveals.
+
+<CardGroup cols={2}>
+  <Card title="2D Diagrams" icon="diagram-project">
+    - Lines crossing everywhere
+    - Nodes overlap and obscure each other
+    - Can't see depth or clustering
+    - Zoom in = lose context, zoom out = see nothing
+  </Card>
+  <Card title="3D Space" icon="cube">
+    - Use depth to separate clusters
+    - Navigate through your architecture
+    - Rotate to see hidden connections
+    - Natural spatial grouping by dependencies
+  </Card>
+</CardGroup>
+
+In 3D space, your codebase becomes a **place you can explore**. Related components cluster together naturally through force-directed layout. You can fly through your architecture, zoom into areas of interest, and see the whole structure at once.
 
 ## Key Features
 
@@ -62,7 +97,7 @@ That's it. Code goes in, explorable architecture comes out.
   <Card title="Installation" icon="download" href="/get-started/installation">
     Install CodeGraph and dependencies
   </Card>
-  <Card title="Why CodeGraph?" icon="lightbulb" href="/why-codegraph">
-    What makes this different
+  <Card title="Philosophy" icon="lightbulb" href="/philosophy">
+    The attribute-based design behind CodeGraph
   </Card>
 </CardGroup>
